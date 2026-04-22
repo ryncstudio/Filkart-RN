@@ -114,9 +114,22 @@ export async function getWallet(userId) {
  */
 export async function verifyOTP(userId, otpCode) {
   const { data, error } = await supabase.functions.invoke('verify-otp', {
-    body: { user_id: userId, otp_code: otpCode },
+    body: { action: 'verify', user_id: userId, otp_code: otpCode },
   });
   if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+/**
+ * Send (or resend) OTP to the user's mobile. Only works for PAID users.
+ */
+export async function sendOTP(userId) {
+  const { data, error } = await supabase.functions.invoke('verify-otp', {
+    body: { action: 'send', user_id: userId },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
   return data;
 }
 

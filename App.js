@@ -8,6 +8,7 @@ import LoginScreen      from './src/screens/LoginScreen';
 import SignUpScreen     from './src/screens/SignUpScreen';
 import MembershipScreen from './src/screens/MembershipScreen';
 import PaymentScreen    from './src/screens/PaymentScreen';
+import OTPScreen        from './src/screens/OTPScreen';
 import DashboardScreen  from './src/screens/DashboardScreen';
 
 import { supabase, signOut } from './src/lib/supabase';
@@ -25,7 +26,8 @@ async function resolveScreenForUser(userId) {
       .maybeSingle();
 
     if (!profile) return 'membership';                          // no profile yet
-    if (profile.status === 'PAID' || profile.status === 'Active') return 'dashboard';
+    if (profile.status === 'Active') return 'dashboard';         // fully activated
+    if (profile.status === 'PAID')   return 'otp';               // paid → awaiting OTP
     return 'membership';                                         // Pending → choose plan
   } catch {
     return 'membership';
@@ -153,6 +155,14 @@ export default function App() {
           plan={planData}
           userData={userData}
           onSuccess={handlePaymentSuccess}
+          onBack={() => setScreen('membership')}
+        />
+      )}
+
+      {screen === 'otp' && (
+        <OTPScreen
+          userData={userData}
+          onSuccess={() => setScreen('dashboard')}
           onBack={() => setScreen('membership')}
         />
       )}

@@ -125,18 +125,13 @@ Deno.serve(async (req: Request) => {
     // 2. Mark user as PAID (SECURITY DEFINER — bypasses RLS)
     await supabase.rpc('mark_user_as_paid', { p_user_id: userId });
 
-    // 3. Auto-spill into Power of 10 network
-    const { data: spillResult, error: spillErr } = await supabase
-      .rpc('auto_spill_user', { p_user_id: userId });
-    if (spillErr) console.error('Auto-spill error:', spillErr.message);
-
-    // 4. Get mobile via SECURITY DEFINER function + send OTP
+    // 3. Get mobile + send OTP (auto-spill now runs AFTER OTP verification)
     const { data: mobile } = await supabase
       .rpc('get_user_mobile', { p_user_id: userId });
     let otpSent = false;
     if (mobile) otpSent = await sendOTP(mobile as string);
 
-    return json({ success: true, user_id: userId, spill: spillResult, otp_sent: otpSent });
+    return json({ success: true, user_id: userId, otp_sent: otpSent });
   }
 
   return json({ received: true, skipped: true, type: eventType });

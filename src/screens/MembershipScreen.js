@@ -84,7 +84,7 @@ export default function MembershipScreen({ onSelect }) {
           {/* Price */}
           <View style={styles.priceRow}>
             <Text style={styles.affiliatePrice}>₱880</Text>
-            <Text style={styles.pricePer}>/mo</Text>
+            <Text style={styles.pricePer}>/yr</Text>
           </View>
 
           {/* Features */}
@@ -130,7 +130,7 @@ export default function MembershipScreen({ onSelect }) {
           {/* Price */}
           <View style={styles.priceRow}>
             <Text style={styles.partnerPrice}>₱1,500</Text>
-            <Text style={styles.partnerPricePer}>/mo</Text>
+            <Text style={styles.partnerPricePer}>/yr</Text>
           </View>
 
           {/* Features */}
