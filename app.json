@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "FilKart",
+    "slug": "filkart",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/filkart_logo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/filkart_logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4a7c3f"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/filkart_logo.png",
+        "backgroundColor": "#4a7c3f"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/filkart_logo.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#4a7c3f",
+          "image": "./assets/filkart_logo.png",
+          "imageWidth": 200
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ]
+  }
+}
