@@ -25,6 +25,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function SignUpScreen({ onNext, onBack }) {
   const [fullName, setFullName]               = useState('');
+  const [username, setUsername]               = useState('');
   const [mobile, setMobile]                   = useState('');
   const [email, setEmail]                     = useState('');
   const [password, setPassword]               = useState('');
@@ -44,7 +45,7 @@ export default function SignUpScreen({ onNext, onBack }) {
 
   const handleNext = async () => {
     // Basic validation
-    if (!fullName || !mobile || !email || !password || !confirmPassword) {
+    if (!fullName || !username || !mobile || !email || !password || !confirmPassword) {
       setError('Please fill in all fields.');
       return;
     }
@@ -63,13 +64,14 @@ export default function SignUpScreen({ onNext, onBack }) {
       // plan details come from the next screen — pass placeholders for now
       const userId = await registerUser({
         fullName,
+        username,
         mobile,
         email,
         password,
-        planId:     null,   // set after membership selection
+        planId:     null,
         planAmount: null,
       });
-      onNext({ userId, fullName, mobile, email });
+      onNext({ userId, fullName, username, mobile, email });
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -128,6 +130,19 @@ export default function SignUpScreen({ onNext, onBack }) {
                 autoCapitalize="words"
                 value={fullName}
                 onChangeText={setFullName}
+              />
+            </View>
+
+            {/* Username */}
+            <View style={styles.inputWrap}>
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                placeholderTextColor="#BBBBBB"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={username}
+                onChangeText={(t) => setUsername(t.replace(/\s/g, '').toLowerCase())}
               />
             </View>
 

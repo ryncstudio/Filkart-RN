@@ -103,10 +103,15 @@ Deno.serve(async (req: Request) => {
 
   if (!accountSid) return json({ error: 'Twilio not configured' }, 503);
 
-  // Verify OTP with Twilio
-  const twilioData = await twilioCheck(accountSid, authToken, serviceSid, e164, otp_code);
-  if (twilioData.status !== 'approved') {
-    return json({ error: 'Invalid or expired OTP. Please try again.', twilio_status: twilioData.status }, 400);
+  // ── Developer Bypass for Twilio Trial ──
+  if (otp_code === '111111') {
+    console.log('Master OTP used by', e164);
+  } else {
+    // Verify OTP with Twilio
+    const twilioData = await twilioCheck(accountSid, authToken, serviceSid, e164, otp_code);
+    if (twilioData.status !== 'approved') {
+      return json({ error: 'Invalid or expired OTP. Please try again.', twilio_status: twilioData.status }, 400);
+    }
   }
 
   // ── Activate account (SECURITY DEFINER — bypasses RLS) ───────────────────

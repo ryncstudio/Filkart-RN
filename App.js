@@ -1,6 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import * as SplashScreenAPI from 'expo-splash-screen';
-import { View } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+
+// ── ErrorBoundary: shows actual crash message instead of Expo Go's generic screen ──
+class ErrorBoundary extends React.Component {
+  state = { error: null };
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <ScrollView style={{ flex: 1, backgroundColor: '#1a1a1a' }} contentContainerStyle={{ padding: 24, paddingTop: 60 }}>
+          <Text style={{ color: '#FF6B6B', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>🚨 App Crash</Text>
+          <Text style={{ color: '#fff', fontSize: 13, marginBottom: 8 }}>{this.state.error?.toString()}</Text>
+          <Text style={{ color: '#aaa', fontSize: 11 }}>{this.state.error?.stack}</Text>
+        </ScrollView>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 import SplashScreen     from './src/screens/SplashScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
@@ -10,25 +28,30 @@ import MembershipScreen from './src/screens/MembershipScreen';
 import PaymentScreen    from './src/screens/PaymentScreen';
 import OTPScreen        from './src/screens/OTPScreen';
 import DashboardScreen  from './src/screens/DashboardScreen';
+import NetworkScreen    from './src/screens/NetworkScreen';
 
 import { supabase, signOut } from './src/lib/supabase';
 
-SplashScreenAPI.preventAutoHideAsync();
+try { SplashScreenAPI.preventAutoHideAsync(); } catch (_) {}
 const SPLASH_DURATION = 3200;
+
+// ── Developer emails — bypass payment & OTP immediately ───────────────────────
+const DEV_EMAILS = ['dev@filkart.ph'];
 
 // ── Resolve which screen a logged-in user should land on ─────────────────────
 async function resolveScreenForUser(userId) {
   try {
     const { data: profile } = await supabase
       .from('users')
-      .select('status, plan_id')
+      .select('status, plan_id, role')
       .eq('id', userId)
       .maybeSingle();
 
-    if (!profile) return 'membership';                          // no profile yet
-    if (profile.status === 'Active') return 'dashboard';         // fully activated
-    if (profile.status === 'PAID')   return 'otp';               // paid → awaiting OTP
-    return 'membership';                                         // Pending → choose plan
+    if (!profile) return 'membership';
+    if (profile.role === 'developer') return 'dashboard';  // ← dev bypass
+    if (profile.status === 'Active') return 'dashboard';
+    if (profile.status === 'PAID')   return 'otp';
+    return 'membership';
   } catch {
     return 'membership';
   }
@@ -52,10 +75,12 @@ export default function App() {
 
         let targetScreen = 'onboarding';
         if (session?.user) {
-          // ── Enforce payment gate ──────────────────────────────────────────
-          targetScreen = await resolveScreenForUser(session.user.id);
-          if (targetScreen !== 'onboarding') {
-            setUserData({ userId: session.user.id });
+          setUserData({ userId: session.user.id });
+          // ── Developer fast-pass (all 3 paths covered) ─────────────────────
+          if (session.user.email && DEV_EMAILS.includes(session.user.email)) {
+            targetScreen = 'dashboard';
+          } else {
+            targetScreen = await resolveScreenForUser(session.user.id);
           }
         }
 
@@ -76,9 +101,13 @@ export default function App() {
     // ── Listen for auth state changes (login/logout) ──────────────────────
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && appReady && session?.user) {
-        // Check payment status before allowing dashboard
-        const target = await resolveScreenForUser(session.user.id);
         setUserData({ userId: session.user.id });
+        // Developer fast-pass
+        if (session.user.email && DEV_EMAILS.includes(session.user.email)) {
+          setScreen('dashboard');
+          return;
+        }
+        const target = await resolveScreenForUser(session.user.id);
         setScreen(target);
       }
       if (event === 'SIGNED_OUT' && appReady) {
@@ -90,7 +119,9 @@ export default function App() {
   }, []);
 
   const onLayout = useCallback(async () => {
-    if (appReady) await SplashScreenAPI.hideAsync();
+    if (appReady) {
+      try { await SplashScreenAPI.hideAsync(); } catch (_) {}
+    }
   }, [appReady]);
 
   const handleLogout = async () => {
@@ -114,6 +145,16 @@ export default function App() {
   const handleLogin = async (userId) => {
     if (userId) {
       setUserData({ userId });
+
+      // ── Developer fast-pass: check email from auth session ────────────────
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email && DEV_EMAILS.includes(user.email)) {
+          setScreen('dashboard');
+          return;
+        }
+      } catch (_) {}
+
       const target = await resolveScreenForUser(userId);
       setScreen(target);
     } else {
@@ -121,56 +162,70 @@ export default function App() {
     }
   };
 
-  if (screen === 'splash') return <SplashScreen />;
+  if (screen === 'splash') return <ErrorBoundary><SplashScreen /></ErrorBoundary>;
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayout}>
+    <ErrorBoundary>
+      <View style={{ flex: 1 }} onLayout={onLayout}>
 
-      {screen === 'onboarding' && (
-        <OnboardingScreen onDone={() => setScreen('login')} />
-      )}
+        {screen === 'onboarding' && (
+          <OnboardingScreen onDone={() => setScreen('login')} />
+        )}
 
-      {screen === 'login' && (
-        <LoginScreen
-          onLogin={handleLogin}
-          onSignUp={() => setScreen('signup')}
-        />
-      )}
+        {screen === 'login' && (
+          <LoginScreen
+            onLogin={handleLogin}
+            onSignUp={() => setScreen('signup')}
+          />
+        )}
 
-      {screen === 'signup' && (
-        <SignUpScreen
-          onNext={(data) => { setUserData(data); setScreen('membership'); }}
-          onBack={() => setScreen('login')}
-        />
-      )}
+        {screen === 'signup' && (
+          <SignUpScreen
+            onNext={(data) => { setUserData(data); setScreen('membership'); }}
+            onBack={() => setScreen('login')}
+          />
+        )}
 
-      {screen === 'membership' && (
-        <MembershipScreen
-          onSelect={(plan) => { setPlanData(plan); setScreen('payment'); }}
-        />
-      )}
+        {screen === 'membership' && (
+          <MembershipScreen
+            onSelect={(plan) => { setPlanData(plan); setScreen('payment'); }}
+            onLogout={handleLogout}
+          />
+        )}
 
-      {screen === 'payment' && (
-        <PaymentScreen
-          plan={planData}
-          userData={userData}
-          onSuccess={handlePaymentSuccess}
-          onBack={() => setScreen('membership')}
-        />
-      )}
+        {screen === 'payment' && (
+          <PaymentScreen
+            plan={planData}
+            userData={userData}
+            onSuccess={handlePaymentSuccess}
+            onBack={() => setScreen('membership')}
+          />
+        )}
 
-      {screen === 'otp' && (
-        <OTPScreen
-          userData={userData}
-          onSuccess={() => setScreen('dashboard')}
-          onBack={() => setScreen('membership')}
-        />
-      )}
+        {screen === 'otp' && (
+          <OTPScreen
+            userData={userData}
+            onSuccess={() => setScreen('dashboard')}
+            onBack={() => setScreen('membership')}
+          />
+        )}
 
       {screen === 'dashboard' && (
-        <DashboardScreen onLogout={handleLogout} />
-      )}
+          <DashboardScreen
+            userData={userData}
+            onLogout={handleLogout}
+            onNetwork={() => setScreen('network')}
+          />
+        )}
 
-    </View>
+        {screen === 'network' && (
+          <NetworkScreen
+            userData={userData}
+            onBack={() => setScreen('dashboard')}
+          />
+        )}
+
+      </View>
+    </ErrorBoundary>
   );
 }

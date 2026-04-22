@@ -44,3 +44,19 @@ yarn-error.*
 supabase/deploy.js
 supabase/test-function.ps1
 expo-qr.html
+
+# Dev/admin scripts (contain service keys)
+create-dev-account.js
+promote-dev.js
+check-dev.js
+skip_payment.js
+test-twilio.js
+gen-qr.js
+
+# Temp / log files
+*.log
+expo-log.txt
+bundle-errors.txt
+bundle-test.txt
+expo-qr.png
+check-bundle.bat

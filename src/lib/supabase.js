@@ -21,7 +21,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
  * Register a new user in Supabase Auth + insert into users table.
  * Registration does NOT set status to PAID — that happens via PayMongo webhook.
  */
-export async function registerUser({ fullName, mobile, email, password, planId, planAmount }) {
+export async function registerUser({ fullName, username, mobile, email, password, planId, planAmount }) {
   // 1. Create auth account
   const { data: authData, error: authErr } = await supabase.auth.signUp({
     email,
@@ -36,6 +36,7 @@ export async function registerUser({ fullName, mobile, email, password, planId, 
   const { error: profileErr } = await supabase.from('users').insert({
     id:            userId,
     full_name:     fullName,
+    username:      username || null,
     mobile_number: mobile,
     email,
     plan_id:       planId,
@@ -181,6 +182,48 @@ export async function getUserStatus(userId) {
     .select('status, otp_verified')
     .eq('id', userId)
     .single();
+  if (error) return null;
+  return data;
+}
+
+/**
+ * Get last 5 transactions for a user (Recent Activities).
+ */
+export async function getTransactions(userId) {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(5);
+  if (error) return [];
+  return data || [];
+}
+
+/**
+ * Get affiliates at a specific level of the Power of 10 network.
+ */
+export async function getNetworkByLevel(userId, level) {
+  const { data, error } = await supabase
+    .from('referrals')
+    .select('referred_id, position, users:referred_id(username, full_name)')
+    .eq('referrer_id', userId)
+    .eq('level', level)
+    .order('position', { ascending: true });
+  if (error) return [];
+  return data || [];
+}
+
+/**
+ * Get the user who referred this user (Topmost Account).
+ */
+export async function getReferrer(userId) {
+  const { data, error } = await supabase
+    .from('referrals')
+    .select('referrer_id, users:referrer_id(username, full_name)')
+    .eq('referred_id', userId)
+    .limit(1)
+    .maybeSingle();
   if (error) return null;
   return data;
 }

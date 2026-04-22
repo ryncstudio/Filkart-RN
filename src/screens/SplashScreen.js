@@ -50,7 +50,7 @@ export default function SplashScreen({ onFinish }) {
       Animated.timing(lineWidth, {
         toValue: 1,
         duration: 350,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       // Tagline + spinner + footer fade in
       Animated.parallel([
