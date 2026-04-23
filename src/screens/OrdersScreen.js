@@ -4,7 +4,7 @@ import {
   StatusBar, Platform, ActivityIndicator, Alert, Image
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getUserOrders, cancelOrder } from '../lib/supabase';
+import { getUserOrders, cancelOrder, subscribeToOrders } from '../lib/supabase';
 
 const STATUS_H = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
 const fmt = n => `₱${Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
@@ -36,7 +36,12 @@ export default function OrdersScreen({ userData, onBack }) {
 
   useEffect(() => {
     loadOrders();
-  }, [loadOrders]);
+    if (!userData?.userId) return;
+    const sub = subscribeToOrders(userData.userId, () => {
+      loadOrders(); // Reload on any order change
+    });
+    return () => sub?.unsubscribe?.();
+  }, [loadOrders, userData?.userId]);
 
   const handleCancel = (order) => {
     Alert.alert(

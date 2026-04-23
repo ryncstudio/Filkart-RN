@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, StatusBar, Platform, Image, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getCartItems, updateCartQuantity, removeFromCart, getProducts } from '../lib/supabase';
+import { getCartItems, updateCartQuantity, removeFromCart, getProducts, subscribeToCart } from '../lib/supabase';
 
 const { width } = Dimensions.get('window');
 const STATUS_H = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
@@ -56,22 +56,45 @@ export default function CartScreen({ userData, onBack, onCheckout, onProductPres
   const [loading, setLoading] = useState(true);
 
   const loadCart = useCallback(async () => {
-    const items = await getCartItems(userData?.userId);
-    setCartItems(items);
-    setLoading(false);
+    try {
+      const items = await getCartItems(userData?.userId);
+      setCartItems(items);
+    } catch (e) {
+      console.log('Cart fetch error:', e);
+    } finally {
+      setLoading(false);
+    }
   }, [userData?.userId]);
 
-  useEffect(() => { loadCart(); }, []);
+  useEffect(() => { 
+    loadCart(); 
+    if (!userData?.userId) return;
+    const sub = subscribeToCart(userData.userId, () => {
+      loadCart(); // Reload on any cart change
+    });
+    return () => sub?.unsubscribe?.();
+  }, [userData?.userId, loadCart]);
 
   const handleQtyChange = async (id, newQty) => {
     if (newQty < 1) { handleRemove(id); return; }
+    // Optimistic update
     setCartItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
-    await updateCartQuantity(id, newQty);
+    try {
+      await updateCartQuantity(id, newQty);
+    } catch (e) {
+      console.log('Qty update error:', e);
+      loadCart(); // revert if failed
+    }
   };
 
   const handleRemove = async (id) => {
     setCartItems(prev => prev.filter(i => i.id !== id));
-    await removeFromCart(id);
+    try {
+      await removeFromCart(id);
+    } catch (e) {
+      console.log('Remove error:', e);
+      loadCart(); // revert if failed
+    }
   };
 
   const subtotal = cartItems.reduce((sum, i) => sum + (i.products?.price ?? 0) * i.quantity, 0);

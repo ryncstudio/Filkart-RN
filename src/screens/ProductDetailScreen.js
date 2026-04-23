@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, StatusBar, Platform, Image, FlatList,
-  Modal, Animated, PanResponder,
+  Modal, Animated, PanResponder, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { addToCart } from '../lib/supabase';
@@ -171,8 +171,12 @@ export default function ProductDetailScreen({ product, userData, onBack, onCartP
   const handleConfirm = async (mode, size, qty) => {
     setModalVisible(false);
     if (mode === 'cart') {
-      try { await addToCart(userData?.userId, product.id, qty, size); } catch(_) {}
-      showToast('Added to cart! 🛒');
+      try { 
+        await addToCart(userData?.userId, product.id, qty, size); 
+        showToast('Added to cart! 🛒');
+      } catch(e) {
+        Alert.alert('Cart Error', e.message || 'Failed to add item to cart.');
+      }
     } else {
       // Buy Now — send single item directly to checkout
       const checkoutItem = [{

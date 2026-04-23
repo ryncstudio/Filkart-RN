@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, StatusBar, TextInput, ActivityIndicator,
-  Platform, Image,
+  Platform, Image, Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -125,8 +125,12 @@ export default function MarketScreen({ userData, categoryFilter, onHome, onNetwo
   }, [userData?.userId]);
 
   const handleAddToCart = useCallback(async (pid) => {
-    setCartCount(n => n + 1);
-    try { await addToCart(userData?.userId, pid); } catch (_) {}
+    try { 
+      await addToCart(userData?.userId, pid); 
+      setCartCount(n => n + 1);
+    } catch (e) {
+      Alert.alert('Cart Error', e.message || 'Failed to add item to cart.');
+    }
   }, [userData?.userId]);
 
   // Filter by search query AND categoryFilter from CategoriesScreen

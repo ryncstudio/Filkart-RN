@@ -377,6 +377,13 @@ export async function getCartItems(userId) {
   return data || [];
 }
 
+export function subscribeToCart(userId, callback) {
+  return supabase
+    .channel(`cart-${userId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'cart_items', filter: `user_id=eq.${userId}` }, callback)
+    .subscribe();
+}
+
 export async function updateCartQuantity(cartItemId, quantity) {
   if (quantity < 1) return;
   await supabase.from('cart_items').update({ quantity }).eq('id', cartItemId);
@@ -703,3 +710,11 @@ export async function cancelOrder(orderId, userId) {
 
   if (updateErr) throw updateErr;
 }
+
+export function subscribeToOrders(userId, callback) {
+  return supabase
+    .channel(`orders-${userId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` }, callback)
+    .subscribe();
+}
+
