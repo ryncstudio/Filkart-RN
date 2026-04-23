@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/filkart_logo.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/filkart_logo.png",
       "resizeMode": "contain",
@@ -19,6 +20,7 @@
         "foregroundImage": "./assets/filkart_logo.png",
         "backgroundColor": "#4a7c3f"
       },
+      "edgeToEdgeEnabled": false,
       "package": "com.rync.filkart"
     },
     "web": {

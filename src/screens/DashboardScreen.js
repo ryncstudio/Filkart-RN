@@ -411,7 +411,7 @@ export default function DashboardScreen({ userData, onLogout, onNetwork, onShop,
           <Text style={styles.sectionTitle}>Latest Updates</Text>
           <View style={styles.updateCard}>
             <Image
-              source={require('../../assets/ph_market_scene.png')}
+              source={{ uri: 'https://images.unsplash.com/photo-1533900298318-6b8da08a523e?q=80&w=800' }}
               style={styles.updateImg}
               resizeMode="cover"
             />

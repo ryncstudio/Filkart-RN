@@ -49,7 +49,7 @@ try { SplashScreenAPI.preventAutoHideAsync(); } catch (_) {}
 const SPLASH_DURATION = 3200;
 
 // ── Developer emails — bypass payment & OTP immediately ───────────────────────
-const DEV_EMAILS = ['dev@filkart.ph', 'admin@filkart.ph', 'test@filkart.ph'];
+const DEV_EMAILS = ['dev@filkart.ph'];
 
 // ── Resolve which screen a logged-in user should land on ─────────────────────
 async function resolveScreenForUser(userId) {
@@ -201,14 +201,7 @@ export default function App() {
 
         {screen === 'signup' && (
           <SignUpScreen
-            onNext={(data) => { 
-              setUserData(data); 
-              if (data.email && DEV_EMAILS.includes(data.email)) {
-                setScreen('dashboard');
-              } else {
-                setScreen('membership'); 
-              }
-            }}
+            onNext={(data) => { setUserData(data); setScreen('membership'); }}
             onBack={() => setScreen('login')}
           />
         )}
