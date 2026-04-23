@@ -85,16 +85,20 @@ export default function App() {
   const [productDetailOrigin, setProductDetailOrigin] = useState('products');
 
   useEffect(() => {
+    // 1. Instantly hide the native boring splash screen so our custom animated one takes over
+    SplashScreenAPI.hideAsync().catch(() => {});
+
     const bootstrap = async () => {
       const t0 = Date.now();
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        
+        // Let the beautiful animated splash screen run for at least SPLASH_DURATION
         const remaining = Math.max(0, SPLASH_DURATION - (Date.now() - t0));
 
         let targetScreen = 'onboarding';
         if (session?.user) {
           setUserData({ userId: session.user.id });
-          // ── Developer fast-pass (all 3 paths covered) ─────────────────────
           if (session.user.email && DEV_EMAILS.includes(session.user.email)) {
             targetScreen = 'dashboard';
           } else {
@@ -104,12 +108,12 @@ export default function App() {
 
         setTimeout(() => {
           setAppReady(true);
-          setTimeout(() => setScreen(targetScreen), 350);
+          setScreen(targetScreen);
         }, remaining);
       } catch {
         setTimeout(() => {
           setAppReady(true);
-          setTimeout(() => setScreen('onboarding'), 350);
+          setScreen('onboarding');
         }, SPLASH_DURATION);
       }
     };
@@ -136,11 +140,9 @@ export default function App() {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
-  const onLayout = useCallback(async () => {
-    if (appReady) {
-      try { await SplashScreenAPI.hideAsync(); } catch (_) {}
-    }
-  }, [appReady]);
+  const onLayout = useCallback(() => {
+    // Nothing needed here since we hid native splash immediately
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
