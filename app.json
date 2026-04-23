@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/filkart_logo.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "splash": {
       "image": "./assets/filkart_logo.png",
       "resizeMode": "contain",
