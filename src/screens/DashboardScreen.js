@@ -36,11 +36,11 @@ const ACTIONS = [
 
 // ── Bottom tabs ────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: 'home',    icon: '⊕',  label: 'Home'    },
+  { id: 'home',    icon: '🏠', label: 'Home'    },
   { id: 'market',  icon: '🏪', label: 'Market'  },
   { id: 'wallet',  icon: '💳', label: 'Wallet'  },
-  { id: 'network', icon: '⊞',  label: 'Network' },
-  { id: 'profile', icon: '👤', label: 'Profile' },
+  { id: 'network', icon: '👥', label: 'Network' },
+  { id: 'profile', icon: '🪪', label: 'Profile' },
 ];
 
 const TX_STYLE = {
@@ -116,7 +116,7 @@ function NotifRow({ item }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function DashboardScreen({ userData, onLogout, onNetwork }) {
+export default function DashboardScreen({ userData, onLogout, onNetwork, onShop, onMarket }) {
   const [profile,       setProfile]       = useState(null);
   const [wallet,        setWallet]        = useState(null);
   const [transactions,  setTransactions]  = useState([]);
@@ -174,6 +174,24 @@ export default function DashboardScreen({ userData, onLogout, onNetwork }) {
     return () => { supabase.removeChannel(ch); };
   }, [userData?.userId]);
 
+  // ── Real-time: wallet balances ─────────────────────────────────────────────
+  // Subscribes to the wallets table so UNILEVEL + SHARE & EARN update
+  // instantly whenever a new payment or commission hits the network.
+  useEffect(() => {
+    if (!profile?.id) return;
+    const ch = supabase
+      .channel(`wallet:${profile.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'wallets',
+        filter: `user_id=eq.${profile.id}`,
+      }, (payload) => {
+        // Use the realtime payload directly — no extra fetch needed
+        if (payload.new) setWallet(payload.new);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [profile?.id]);
+
   // ── Auto-carousel ──────────────────────────────────────────────────────────
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -187,8 +205,8 @@ export default function DashboardScreen({ userData, onLogout, onNetwork }) {
   }, []);
 
   const displayName   = profile?.username || profile?.full_name?.split(' ')[0] || 'User';
-  const unilevel      = Number(wallet?.unilevel_balance ?? 0);
-  const shareEarn     = Number(wallet?.commission_balance ?? wallet?.share_earn_balance ?? 0);
+  const unilevel      = Number(wallet?.unilevel_cash ?? 0);
+  const shareEarn     = Number(wallet?.share_earn ?? 0);
   const totalEarnings = unilevel + shareEarn;
 
   const handleBell = () => {
@@ -199,6 +217,9 @@ export default function DashboardScreen({ userData, onLogout, onNetwork }) {
 
   const handleTab = (id) => {
     if (id === 'network') { onNetwork?.(); return; }
+    if (id === 'market')  { onMarket?.();  return; }
+    if (id === 'wallet')  { onWallet?.();  return; }
+    if (id === 'profile') { onProfile?.(); return; }
     setActiveTab(id);
   };
 
@@ -348,7 +369,10 @@ export default function DashboardScreen({ userData, onLogout, onNetwork }) {
               <TouchableOpacity
                 key={a.id}
                 style={[styles.quickCard, { backgroundColor: a.bg }]}
-                onPress={() => a.id === 'network' ? onNetwork?.() : null}
+                onPress={() => {
+                  if (a.id === 'network') onNetwork?.();
+                  else if (a.id === 'shop') onMarket?.();
+                }}
                 activeOpacity={0.75}
               >
                 <Text style={styles.quickIcon}>{a.icon}</Text>
@@ -496,15 +520,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-    paddingBottom: 10,
+    paddingBottom: 6,
   },
   /* Single visual row inside header — sits below status bar spacer */
   headerRow: {
     flexDirection:     'row',
-    alignItems:        'center',          // vertical center within this row
-    justifyContent:    'space-between',   // avatar+text LEFT, bell RIGHT
+    alignItems:        'center',
+    justifyContent:    'space-between',
     paddingHorizontal: 16,
-    paddingTop:        6,
+    paddingTop:        4,
   },
   headerLeft: {
     flexDirection: 'row',

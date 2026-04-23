@@ -29,6 +29,19 @@ import PaymentScreen    from './src/screens/PaymentScreen';
 import OTPScreen        from './src/screens/OTPScreen';
 import DashboardScreen  from './src/screens/DashboardScreen';
 import NetworkScreen    from './src/screens/NetworkScreen';
+import ShopScreen       from './src/screens/ShopScreen';
+import MarketScreen     from './src/screens/MarketScreen';
+import CategoriesScreen from './src/screens/CategoriesScreen';
+import ProductsScreen       from './src/screens/ProductsScreen';
+import ProductDetailScreen  from './src/screens/ProductDetailScreen';
+import CartScreen           from './src/screens/CartScreen';
+import CheckoutScreen       from './src/screens/CheckoutScreen';
+import OrderSuccessScreen   from './src/screens/OrderSuccessScreen';
+import OrderStatusScreen    from './src/screens/OrderStatusScreen';
+import WalletScreen         from './src/screens/WalletScreen';
+import ProfileScreen        from './src/screens/ProfileScreen';
+import ProfileInfoScreen    from './src/screens/ProfileInfoScreen';
+import OrdersScreen         from './src/screens/OrdersScreen';
 
 import { supabase, signOut } from './src/lib/supabase';
 
@@ -63,8 +76,13 @@ export default function App() {
   const [appReady, setAppReady] = useState(false);
 
   // Session data threaded through registration flow
-  const [userData, setUserData] = useState(null); // { userId, fullName, mobile, email }
-  const [planData, setPlanData] = useState(null); // { plan_id, amount }
+  const [userData, setUserData]         = useState(null);
+  const [planData,  setPlanData]         = useState(null);
+  const [categoryFilter,  setCategoryFilter]  = useState(null);
+  const [selectedProduct, setSelectedProduct]  = useState(null);
+  const [checkoutItems,   setCheckoutItems]    = useState([]);
+  const [placedOrder,     setPlacedOrder]      = useState(null);
+  const [productDetailOrigin, setProductDetailOrigin] = useState('products');
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -215,6 +233,10 @@ export default function App() {
             userData={userData}
             onLogout={handleLogout}
             onNetwork={() => setScreen('network')}
+            onShop={() => setScreen('shop')}
+            onMarket={() => setScreen('market')}
+            onWallet={() => setScreen('wallet')}
+            onProfile={() => setScreen('profile')}
           />
         )}
 
@@ -222,6 +244,136 @@ export default function App() {
           <NetworkScreen
             userData={userData}
             onBack={() => setScreen('dashboard')}
+            onMarket={() => setScreen('market')}
+            onWallet={() => setScreen('wallet')}
+            onProfile={() => setScreen('profile')}
+          />
+        )}
+
+        {screen === 'shop' && (
+          <ShopScreen
+            userData={userData}
+            onBack={() => setScreen('dashboard')}
+          />
+        )}
+
+        {screen === 'market' && (
+          <MarketScreen
+            userData={userData}
+            categoryFilter={categoryFilter}
+            onHome={() => setScreen('dashboard')}
+            onNetwork={() => setScreen('network')}
+            onWallet={() => setScreen('wallet')}
+            onProfile={() => setScreen('profile')}
+            onCategories={() => setScreen('categories')}
+            onProducts={() => setScreen('products')}
+            onProductPress={(p) => { setSelectedProduct(p); setProductDetailOrigin('market'); setScreen('productDetail'); }}
+            onCartPress={() => setScreen('cart')}
+          />
+        )}
+
+        {screen === 'categories' && (
+          <CategoriesScreen
+            userData={userData}
+            onBack={() => setScreen('market')}
+            onHome={() => setScreen('dashboard')}
+            onNetwork={() => setScreen('network')}
+            onWallet={() => setScreen('wallet')}
+            onSelectCategory={(filter) => {
+              setCategoryFilter(filter);
+              setScreen('market');
+            }}
+          />
+        )}
+
+        {screen === 'products' && (
+          <ProductsScreen
+            userData={userData}
+            onBack={() => setScreen('market')}
+            onHome={() => setScreen('dashboard')}
+            onNetwork={() => setScreen('network')}
+            onWallet={() => setScreen('wallet')}
+            onProductPress={(p) => { setSelectedProduct(p); setProductDetailOrigin('products'); setScreen('productDetail'); }}
+          />
+        )}
+
+        {screen === 'productDetail' && (
+          <ProductDetailScreen
+            product={selectedProduct}
+            userData={userData}
+            onBack={() => setScreen(productDetailOrigin)}
+            onCartPress={() => setScreen('cart')}
+            onBuyNow={(items) => { setCheckoutItems(items); setScreen('checkout'); }}
+          />
+        )}
+
+        {screen === 'wallet' && (
+          <WalletScreen
+            userData={userData}
+            onBack={() => setScreen('dashboard')}
+            onHome={() => setScreen('dashboard')}
+            onMarket={() => setScreen('market')}
+            onNetwork={() => setScreen('network')}
+          />
+        )}
+
+        {screen === 'profile' && (
+          <ProfileScreen
+            userData={userData}
+            onHome={() => setScreen('dashboard')}
+            onMarket={() => setScreen('market')}
+            onWallet={() => setScreen('wallet')}
+            onNetwork={() => setScreen('network')}
+            onPersonalInfo={() => setScreen('profileInfo')}
+            onOrders={() => setScreen('orders')}
+          />
+        )}
+
+        {screen === 'orders' && (
+          <OrdersScreen
+            userData={userData}
+            onBack={() => setScreen('profile')}
+          />
+        )}
+
+        {screen === 'profileInfo' && (
+          <ProfileInfoScreen
+            userData={userData}
+            onBack={() => setScreen('profile')}
+          />
+        )}
+
+        {screen === 'cart' && (
+          <CartScreen
+            userData={userData}
+            onBack={() => setScreen(selectedProduct ? 'productDetail' : 'market')}
+            onCheckout={(items) => { setCheckoutItems(items); setScreen('checkout'); }}
+          />
+        )}
+
+        {screen === 'checkout' && (
+          <CheckoutScreen
+            userData={userData}
+            cartItems={checkoutItems}
+            onBack={() => setScreen('cart')}
+            onOrderPlaced={(order) => { setPlacedOrder(order); setScreen('orderSuccess'); }}
+          />
+        )}
+
+        {screen === 'orderSuccess' && (
+          <OrderSuccessScreen
+            order={placedOrder}
+            onTrackOrder={() => setScreen('orderStatus')}
+            onContinueShopping={() => setScreen('market')}
+            onProductPress={(p) => { setSelectedProduct(p); setScreen('productDetail'); }}
+          />
+        )}
+
+        {screen === 'orderStatus' && (
+          <OrderStatusScreen
+            orderId={placedOrder?.id}
+            onBack={() => setScreen('orderSuccess')}
+            onContinueShopping={() => setScreen('market')}
           />
         )}
 
