@@ -21,9 +21,9 @@ function getGreeting() {
 
 // ── Carousel slides ────────────────────────────────────────────────────────────
 const SLIDES = [
-  { id: '1', tag: 'SEASONAL SELECTION', title: 'Fresh Harvest\nDirect to You',  image: require('../../assets/ph_fruits_basket.png') },
-  { id: '2', tag: 'EXCLUSIVE OFFER',    title: 'Top Properties\nNear You',       image: require('../../assets/ph_property.png') },
-  { id: '3', tag: 'NETWORK BONUS',      title: 'Power of 10\nEarnings Await',    image: require('../../assets/ph_market_scene.png') },
+  { id: '1', tag: 'SEASONAL SELECTION', title: 'Fresh Harvest\nDirect to You',  image: { uri: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=800' } },
+  { id: '2', tag: 'EXCLUSIVE OFFER',    title: 'Top Properties\nNear You',       image: { uri: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=800' } },
+  { id: '3', tag: 'NETWORK BONUS',      title: 'Power of 10\nEarnings Await',    image: { uri: 'https://images.unsplash.com/photo-1533900298318-6b8da08a523e?q=80&w=800' } },
 ];
 
 // ── Quick actions ──────────────────────────────────────────────────────────────
