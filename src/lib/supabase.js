@@ -343,7 +343,7 @@ export async function toggleFavorite(userId, productId) {
 }
 
 /** Add a product to cart (upsert — increments quantity if already present). */
-export async function addToCart(userId, productId) {
+export async function addToCart(userId, productId, qty = 1, size = null) {
   if (!userId || !productId) return;
   const { data: existing } = await supabase
     .from('cart_items')
@@ -355,12 +355,12 @@ export async function addToCart(userId, productId) {
   if (existing) {
     await supabase
       .from('cart_items')
-      .update({ quantity: existing.quantity + 1 })
+      .update({ quantity: existing.quantity + qty })
       .eq('id', existing.id);
   } else {
     await supabase
       .from('cart_items')
-      .insert({ user_id: userId, product_id: productId, quantity: qty ?? 1, size: size ?? null });
+      .insert({ user_id: userId, product_id: productId, quantity: qty, size: size });
   }
 }
 
