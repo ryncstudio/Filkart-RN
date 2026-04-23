@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/filkart_logo.png",
         "backgroundColor": "#4a7c3f"
       },
-      "edgeToEdgeEnabled": false
+      "package": "com.rync.filkart"
     },
     "web": {
       "favicon": "./assets/filkart_logo.png"
@@ -36,6 +36,11 @@
       ],
       "expo-font",
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "10f3767c-8640-470e-8011-41a7ca4c3889"
+      }
+    }
   }
 }
