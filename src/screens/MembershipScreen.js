@@ -92,7 +92,7 @@ export default function MembershipScreen({ onSelect, onLogout }) {
           {/* Price */}
           <View style={styles.priceRow}>
             <Text style={styles.affiliatePrice}>₱880</Text>
-            <Text style={styles.pricePer}>/yr</Text>
+            <Text style={styles.pricePer}>/mo</Text>
           </View>
 
           {/* Features */}

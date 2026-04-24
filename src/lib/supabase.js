@@ -21,7 +21,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
  * Register a new user in Supabase Auth + insert into users table.
  * Registration does NOT set status to PAID — that happens via PayMongo webhook.
  */
-export async function registerUser({ fullName, username, mobile, email, password, planId, planAmount }) {
+export async function registerUser({ fullName, username, mobile, email, password, planId, planAmount, referralCode }) {
   // 1. Create auth account
   const { data: authData, error: authErr } = await supabase.auth.signUp({
     email,
@@ -32,7 +32,18 @@ export async function registerUser({ fullName, username, mobile, email, password
   const userId = authData.user?.id;
   if (!userId) throw new Error('No user ID returned from auth');
 
-  // 2. Insert into public.users
+  // 2. Resolve referrer's user_id if a referral code (username) was provided
+  let referredBy = null;
+  if (referralCode) {
+    const { data: referrer } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', referralCode.trim().toLowerCase())
+      .maybeSingle();
+    if (referrer?.id) referredBy = referrer.id;
+  }
+
+  // 3. Insert into public.users
   const { error: profileErr } = await supabase.from('users').insert({
     id:            userId,
     full_name:     fullName,
@@ -42,6 +53,7 @@ export async function registerUser({ fullName, username, mobile, email, password
     plan_id:       planId,
     plan_amount:   planAmount,
     status:        'Pending',
+    referred_by:   referredBy,   // UUID of the referrer (null if no code)
   });
   if (profileErr) throw profileErr;
 

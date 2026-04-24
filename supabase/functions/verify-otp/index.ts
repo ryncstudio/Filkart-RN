@@ -122,6 +122,56 @@ Deno.serve(async (req: Request) => {
     .rpc('auto_spill_user', { p_user_id: user_id });
   if (spillErr) console.error('Auto-spill error:', spillErr.message);
 
+  // ── Credit Referrer's Share & Earn Wallet ─────────────────────────────────
+  // ₱100 for affiliate referral, ₱200 for partner referral
+  try {
+    const { data: newUser } = await supabase
+      .from('users')
+      .select('referred_by, plan_id')
+      .eq('id', user_id)
+      .maybeSingle();
+
+    if (newUser?.referred_by) {
+      const referrerId = newUser.referred_by;
+      const planId     = newUser.plan_id ?? 'affiliate';
+      const bonus      = planId === 'partner' ? 200 : 100;
+      const txnType    = planId === 'partner' ? 'partner_referral' : 'direct_referral';
+      const label      = planId === 'partner'
+        ? 'Partner Seller Referral Bonus'
+        : 'Direct Referral Bonus';
+
+      // Fetch referrer's current share_earn balance
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('share_earn')
+        .eq('user_id', referrerId)
+        .maybeSingle();
+
+      const currentBalance = Number(wallet?.share_earn ?? 0);
+
+      // Credit the wallet
+      await supabase
+        .from('wallets')
+        .update({ share_earn: currentBalance + bonus })
+        .eq('user_id', referrerId);
+
+      // Record the transaction
+      await supabase.from('wallet_transactions').insert({
+        user_id:          referrerId,
+        wallet_type:      'share',
+        transaction_type: txnType,
+        amount:           bonus,
+        source_label:     label,
+        status:           'completed',
+      });
+
+      console.log(`Credited ₱${bonus} to referrer ${referrerId} (${txnType})`);
+    }
+  } catch (refErr) {
+    // Non-fatal — don't block account activation if referral credit fails
+    console.error('Referral credit error:', (refErr as Error).message);
+  }
+
   return json({
     success:  true,
     message:  'Account activated successfully!',

@@ -30,6 +30,7 @@ export default function SignUpScreen({ onNext, onBack }) {
   const [email, setEmail]                     = useState('');
   const [password, setPassword]               = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode]       = useState('');
   const [showPass, setShowPass]               = useState(false);
   const [showConfirm, setShowConfirm]         = useState(false);
   const [loading, setLoading]                 = useState(false);
@@ -68,8 +69,9 @@ export default function SignUpScreen({ onNext, onBack }) {
         mobile,
         email,
         password,
-        planId:     null,
-        planAmount: null,
+        planId:      null,
+        planAmount:  null,
+        referralCode: referralCode.trim() || null,
       });
       onNext({ userId, fullName, username, mobile, email });
     } catch (err) {
@@ -208,6 +210,19 @@ export default function SignUpScreen({ onNext, onBack }) {
               >
                 <Text style={styles.eyeIcon}>{showConfirm ? '👁️' : '🙈'}</Text>
               </TouchableOpacity>
+            </View>
+
+            {/* Referral Code (optional) */}
+            <View style={styles.inputWrap}>
+              <TextInput
+                style={styles.input}
+                placeholder="Referral Code (optional)"
+                placeholderTextColor="#BBBBBB"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={referralCode}
+                onChangeText={(t) => setReferralCode(t.trim())}
+              />
             </View>
 
             {/* Next Button */}
