@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  StatusBar, Platform, Share, Alert, ActivityIndicator,
+  StatusBar, Platform, Share, Alert, ActivityIndicator, Image, ActionSheetIOS,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   getCurrentUserProfile, getWalletFull, getNetworkCountByLevel, signOut,
@@ -40,10 +42,11 @@ const MENU = [
 ];
 
 export default function ProfileScreen({ userData, onHome, onMarket, onWallet, onNetwork, onPersonalInfo, onOrders }) {
-  const [profile,  setProfile]  = useState(null);
-  const [wallet,   setWallet]   = useState(null);
-  const [network,  setNetwork]  = useState(0);
-  const [loading,  setLoading]  = useState(true);
+  const [profile,    setProfile]    = useState(null);
+  const [wallet,     setWallet]     = useState(null);
+  const [network,    setNetwork]    = useState(0);
+  const [loading,    setLoading]    = useState(true);
+  const [profilePic, setProfilePic] = useState(null);
 
   const load = useCallback(async () => {
     const uid = userData?.userId;
@@ -58,7 +61,10 @@ export default function ProfileScreen({ userData, onHome, onMarket, onWallet, on
     setLoading(false);
   }, [userData?.userId]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    AsyncStorage.getItem('filkart_profile_pic').then(uri => { if (uri) setProfilePic(uri); });
+  }, []);
 
   const totalEarnings = Number(wallet?.unilevel_cash||0) + Number(wallet?.unilevel_credits||0) + Number(wallet?.share_earn||0);
   const rank       = getRank(network);
@@ -80,6 +86,41 @@ export default function ProfileScreen({ userData, onHome, onMarket, onWallet, on
   const handleShare = () => Share.share({
     message: `Join me on Filkart! Use my referral code: ${referralCode} when you sign up.`,
   });
+
+  const pickImage = async (useCamera = false) => {
+    try {
+      let result;
+      if (useCamera) {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) { Alert.alert('Permission needed', 'Camera access is required.'); return; }
+        result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+      } else {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) { Alert.alert('Permission needed', 'Photo library access is required.'); return; }
+        result = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+      }
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const uri = result.assets[0].uri;
+        setProfilePic(uri);
+        await AsyncStorage.setItem('filkart_profile_pic', uri);
+      }
+    } catch (e) { Alert.alert('Error', e.message); }
+  };
+
+  const handleAvatarPress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: ['Cancel', 'Take Photo', 'Choose from Gallery'], cancelButtonIndex: 0 },
+        (idx) => { if (idx === 1) pickImage(true); if (idx === 2) pickImage(false); }
+      );
+    } else {
+      Alert.alert('Profile Photo', 'Choose an option', [
+        { text: 'Take Photo', onPress: () => pickImage(true) },
+        { text: 'Choose from Gallery', onPress: () => pickImage(false) },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
+  };
 
   const handleLogout = () => Alert.alert('Log Out', 'Are you sure?', [
     { text:'Cancel', style:'cancel' },
@@ -107,18 +148,28 @@ export default function ProfileScreen({ userData, onHome, onMarket, onWallet, on
             <TouchableOpacity style={s.settingsBtn}><Text style={{fontSize:18}}>⚙️</Text></TouchableOpacity>
           </View>
 
-          <View style={s.avatarWrap}>
-            <LinearGradient colors={['#FFC107','#D97706']} style={s.avatarRing}>
-              <View style={s.avatarInner}>
-                <Text style={s.avatarLetter}>{displayName[0]?.toUpperCase()||'?'}</Text>
+          <TouchableOpacity onPress={handleAvatarPress} activeOpacity={0.8}>
+            <View style={s.avatarWrap}>
+              <LinearGradient colors={['#E5E7EB','#D1D5DB']} style={s.avatarRing}>
+                <View style={s.avatarInner}>
+                  {profilePic ? (
+                    <Image source={{ uri: profilePic }} style={{ width: 92, height: 92, borderRadius: 46 }} />
+                  ) : (
+                    <Text style={s.avatarLetter}>👤</Text>
+                  )}
+                </View>
+              </LinearGradient>
+              {/* Camera badge */}
+              <View style={s.cameraBadge}>
+                <Text style={{ fontSize: 14 }}>📷</Text>
               </View>
-            </LinearGradient>
-            {isVerified && (
-              <View style={s.verifiedBadge}>
-                <Text style={s.verifiedTxt}>✓ VERIFIED</Text>
-              </View>
-            )}
-          </View>
+              {isVerified && (
+                <View style={s.verifiedBadge}>
+                  <Text style={s.verifiedTxt}>✓ VERIFIED</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
 
           <Text style={s.heroName}>{loading ? '...' : displayName}</Text>
           <View style={[s.rankBadge,{borderColor:rank.color}]}>
@@ -236,8 +287,9 @@ const s = StyleSheet.create({
   settingsBtn:{width:38,height:38,borderRadius:19,backgroundColor:'rgba(255,255,255,0.18)',alignItems:'center',justifyContent:'center'},
   avatarWrap:{alignItems:'center',marginBottom:10},
   avatarRing:{width:104,height:104,borderRadius:52,padding:3,marginBottom:8},
-  avatarInner:{flex:1,borderRadius:50,backgroundColor:'rgba(0,0,0,0.3)',alignItems:'center',justifyContent:'center'},
+  avatarInner:{flex:1,borderRadius:50,backgroundColor:'#F3F4F6',alignItems:'center',justifyContent:'center',overflow:'hidden'},
   avatarLetter:{fontSize:40,fontWeight:'900',color:'#fff'},
+  cameraBadge:{position:'absolute',bottom:8,right:-4,width:30,height:30,borderRadius:15,backgroundColor:'#FFC107',alignItems:'center',justifyContent:'center',borderWidth:2,borderColor:'#fff',elevation:4,shadowColor:'#000',shadowOpacity:0.2,shadowRadius:4},
   verifiedBadge:{backgroundColor:'#FFC107',borderRadius:14,paddingHorizontal:12,paddingVertical:4,marginTop:-6},
   verifiedTxt:{fontSize:10,fontWeight:'800',color:'#1B5E20',letterSpacing:1},
   heroName:{fontSize:26,fontWeight:'900',color:'#fff',marginTop:8,marginBottom:10},

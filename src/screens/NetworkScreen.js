@@ -194,7 +194,7 @@ export default function NetworkScreen({ userData, onBack, onMarket, onWallet, on
 
   return (
     <View style={styles.root}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
       {/* Member modal */}
       <MemberModal
@@ -205,19 +205,19 @@ export default function NetworkScreen({ userData, onBack, onMarket, onWallet, on
         onClose={() => setModalLevel(null)}
       />
 
-      {/* ── Header gradient ── */}
-      <LinearGradient colors={['#1B5E20', '#2E7D32', '#FFC107']} locations={[0, 0.6, 1]} style={styles.header}>
+      {/* ── Header (white) ── */}
+      <View style={styles.header}>
         <View style={{ height: STATUS_H }} />
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.headerTitle}>My Network</Text>
-            <Text style={styles.headerSub}>Filkart Unilevel · Power of 10</Text>
+            <Text style={[styles.headerTitle, { color: '#111827' }]}>My Network</Text>
+            <Text style={[styles.headerSub, { color: '#6B7280' }]}>Filkart Unilevel · Power of 10</Text>
           </View>
-          <View style={styles.networkBadge}>
-            <Text style={styles.networkBadgeText}>👥 {totalMembers} Members</Text>
+          <View style={[styles.networkBadge, { backgroundColor: '#E8F5E9' }]}>
+            <Text style={[styles.networkBadgeText, { color: '#1B5E20' }]}>👥 {totalMembers} Members</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scroll, { paddingBottom: 100 }]}>
 
@@ -239,11 +239,11 @@ export default function NetworkScreen({ userData, onBack, onMarket, onWallet, on
           </View>
         </View>
 
-        {/* ── Auto-spill note ── */}
+        {/* ── Network info note ── */}
         <View style={styles.spillBanner}>
-          <Text style={styles.spillIcon}>🔄</Text>
+          <Text style={styles.spillIcon}>ℹ️</Text>
           <Text style={styles.spillText}>
-            Auto-Spill placement: <Text style={styles.spillBold}>Left → Right</Text>, starting from the Filkart Root account.
+            Your network grows as your referrals join. Each level holds <Text style={styles.spillBold}>10×</Text> the previous capacity. Tap any level to view members.
           </Text>
         </View>
 
@@ -262,15 +262,13 @@ export default function NetworkScreen({ userData, onBack, onMarket, onWallet, on
               onPress={() => openModal(lvl)}
               style={styles.levelCard}
             >
-              {/* Left color stripe */}
-              <LinearGradient
-                colors={lvl.colors}
-                start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-                style={styles.levelStripe}
+              {/* Left color stripe (flat) */}
+              <View
+                style={[styles.levelStripe, { backgroundColor: lvl.colors[0] }]}
               >
                 <Text style={styles.stripeNum}>{lvl.level}</Text>
                 <Text style={styles.stripePow}>{lvl.power}</Text>
-              </LinearGradient>
+              </View>
 
               {/* Card body */}
               <View style={styles.levelBody}>
@@ -291,10 +289,8 @@ export default function NetworkScreen({ userData, onBack, onMarket, onWallet, on
 
                 {/* Progress bar */}
                 <View style={styles.progTrack}>
-                  <LinearGradient
-                    colors={lvl.colors}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={[styles.progFill, { width: `${Math.max(progress * 100, 2)}%` }]}
+                  <View
+                    style={[styles.progFill, { width: `${Math.max(progress * 100, 2)}%`, backgroundColor: lvl.accent }]}
                   />
                 </View>
                 <Text style={styles.progLabel}>
@@ -413,7 +409,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F4F6F9' },
 
   /* Header */
-  header: { paddingBottom: 14, paddingHorizontal: 20 },
+  header: { paddingBottom: 14, paddingHorizontal: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   headerRow: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', marginBottom: 6,

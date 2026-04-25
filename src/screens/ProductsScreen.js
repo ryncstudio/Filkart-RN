@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, StatusBar, TextInput, ActivityIndicator, Platform, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { getProducts, addToCart, toggleFavorite, getFavorites } from '../lib/supabase';
 
 const { width } = Dimensions.get('window');
@@ -106,7 +107,9 @@ export default function ProductsScreen({ userData, onBack, onHome, onNetwork, on
       <LinearGradient colors={['#1B5E20','#2d6a4f']} style={s.header}>
         <View style={{ height: STATUS_H }} />
         <View style={s.headerRow}>
-          <TouchableOpacity onPress={onBack} style={s.backBtn}><Text style={s.backArrow}>←</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onBack} style={s.backBtn}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
           <Text style={s.headerTitle}>All Products</Text>
           <View style={{ width: 38 }} />
         </View>

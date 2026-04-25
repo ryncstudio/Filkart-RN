@@ -246,18 +246,23 @@ export default function WalletScreen({ userData, onBack, onHome, onNetwork, onMa
             <View>
               <Text style={s.cardLabel}>Unilevel Wallet</Text>
               {loading ? <ActivityIndicator color="#fff" style={{ marginVertical: 8 }} /> : <Text style={s.cardAmount}>{fmt(uniTotal)}</Text>}
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                <View style={s.splitPill}>
-                  <Text style={s.splitPillLabel}>💵 Cash</Text>
-                  <Text style={s.splitPillAmt}>{fmt(uniCash)}</Text>
-                </View>
-                <View style={[s.splitPill, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-                  <Text style={s.splitPillLabel}>🪙 Credits</Text>
-                  <Text style={s.splitPillAmt}>{fmt(uniCredits)}</Text>
-                </View>
+            </View>
+            <View style={s.cardIcon}>
+              <View style={{ width: 20, height: 16, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)', borderRadius: 3 }}>
+                <View style={{ height: 4, borderBottomWidth: 1.5, borderBottomColor: 'rgba(255,255,255,0.85)' }} />
+                <View style={{ position: 'absolute', right: 2, top: 6, width: 5, height: 5, borderRadius: 3, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)' }} />
               </View>
             </View>
-            <View style={s.cardIcon}><Text style={{ fontSize: 22 }}>📊</Text></View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+            <View style={s.splitPill}>
+              <Text style={s.splitPillLabel}>💵 Cash</Text>
+              <Text style={s.splitPillAmt}>{fmt(uniCash)}</Text>
+            </View>
+            <View style={[s.splitPill, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+              <Text style={s.splitPillLabel}>🪙 Credits</Text>
+              <Text style={s.splitPillAmt}>{fmt(uniCredits)}</Text>
+            </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
             <TouchableOpacity style={s.cardBtnWhite} onPress={() => setShowWithdrawType('unilevel_cash')} activeOpacity={0.85}>
@@ -275,7 +280,12 @@ export default function WalletScreen({ userData, onBack, onHome, onNetwork, onMa
               {loading ? <ActivityIndicator color="#fff" style={{ marginVertical: 8 }} /> : <Text style={s.cardAmount}>{fmt(shareEarn)}</Text>}
               <Text style={[s.cardNote, { marginTop: 6 }]}>100% withdrawable · No restrictions</Text>
             </View>
-            <View style={s.cardIcon}><Text style={{ fontSize: 22 }}>📈</Text></View>
+            <View style={s.cardIcon}>
+              <View style={{ width: 20, height: 16, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)', borderRadius: 3 }}>
+                <View style={{ height: 4, borderBottomWidth: 1.5, borderBottomColor: 'rgba(255,255,255,0.85)' }} />
+                <View style={{ position: 'absolute', right: 2, top: 6, width: 5, height: 5, borderRadius: 3, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.85)' }} />
+              </View>
+            </View>
           </View>
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
             <TouchableOpacity style={s.cardBtnWhite} onPress={() => setShowWithdrawType('share_earn')} activeOpacity={0.85}>
@@ -348,7 +358,7 @@ const s = StyleSheet.create({
   cardLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 1, marginBottom: 4 },
   cardAmount: { fontSize: 34, fontWeight: '900', color: '#fff', letterSpacing: -0.5 },
   cardIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  splitPill: { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7 },
+  splitPill: { flex: 1, backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 9 },
   splitPillLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.8)', letterSpacing: 0.5 },
   splitPillAmt: { fontSize: 13, fontWeight: '900', color: '#fff', marginTop: 2 },
   cardBtnWhite: { flex: 1, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 12, alignItems: 'center' },

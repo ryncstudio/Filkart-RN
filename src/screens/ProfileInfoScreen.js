@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUserProfile, updateUserProfile } from '../lib/supabase';
 
 const STATUS_H = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
@@ -112,7 +113,7 @@ export default function ProfileInfoScreen({ userData, onBack }) {
       {/* Header */}
       <LinearGradient colors={['#1B5E20','#2E7D32']} style={[s.header,{paddingTop: STATUS_H + 6}]}>
         <TouchableOpacity onPress={onBack} style={s.backBtn}>
-          <Text style={{fontSize:20,color:'#fff',fontWeight:'700'}}>←</Text>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Personal Information</Text>
         <View style={{width:38}}/>

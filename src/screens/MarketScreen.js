@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, StatusBar, TextInput, ActivityIndicator,
-  Platform, Image, Alert
+  Platform, Image, Alert, FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -12,6 +12,7 @@ import {
 
 const { width } = Dimensions.get('window');
 const CARD_W  = (width - 48) / 2;
+const HERO_W  = width - 32;
 const STATUS_H = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
 
 const TABS = [
@@ -31,6 +32,18 @@ const CATEGORIES = [
   { id: 'bundles',  icon: '🎁',  label: 'Gift\nBundles'     },
   { id: 'eservice', icon: '📱',  label: 'E-\nServices'      },
   { id: 'trending', icon: '⭐',  label: 'Trending'           },
+];
+
+// ── Hero carousel slides (8 category cards) ─────────────────────────────────
+const HERO_SLIDES = [
+  { id: 'h1', catId: 'pinoy',    icon: '🇵🇭', title: 'Proudly Pinoy',      sub: 'Support Filipino-made products',       bg: ['#1B4332','#2d6a4f','#52b788'] },
+  { id: 'h2', catId: 'basic',    icon: '🧺',  title: 'Basic Needs',        sub: 'Everyday essentials at your doorstep', bg: ['#0D47A1','#1976D2','#42A5F5'] },
+  { id: 'h3', catId: 'share',    icon: '🤝',  title: 'Share & Earn',       sub: 'Earn while you shop and share',        bg: ['#E65100','#F57C00','#FFB74D'] },
+  { id: 'h4', catId: 'farm',     icon: '🌾',  title: 'Farm to Home',       sub: 'Fresh harvest direct from farmers',    bg: ['#33691E','#558B2F','#8BC34A'] },
+  { id: 'h5', catId: 'negosyo',  icon: '💼',  title: 'Negosyo Kits',       sub: 'Start your own business today',        bg: ['#4A148C','#7B1FA2','#AB47BC'] },
+  { id: 'h6', catId: 'bundles',  icon: '🎁',  title: 'Gift Bundles',       sub: 'Curated gift sets for loved ones',     bg: ['#880E4F','#C2185B','#F06292'] },
+  { id: 'h7', catId: 'eservice', icon: '📱',  title: 'E-Services',         sub: 'Digital services at your fingertips',  bg: ['#006064','#00838F','#26C6DA'] },
+  { id: 'h8', catId: 'trending', icon: '⭐',  title: 'Trending Now',       sub: 'Top picks from the community',         bg: ['#BF360C','#E64A19','#FF8A65'] },
 ];
 
 const DEMO_PRODUCTS = [
@@ -55,9 +68,13 @@ function ProductCard({ product, isFav, onToggleFav, onPress }) {
         {product.image_url ? (
           <Image source={{ uri: product.image_url }} style={cS.img} resizeMode="cover" />
         ) : (
-          <LinearGradient colors={bg} style={cS.imgPlaceholder}>
-            <Text style={{ fontSize: 48 }}>{icon}</Text>
-          </LinearGradient>
+          <View style={cS.imgPlaceholder}>
+            <Image
+              source={require('../../assets/filkart_logo.png')}
+              style={{ width: CARD_W * 0.5, height: CARD_W * 0.5, opacity: 0.15 }}
+              resizeMode="contain"
+            />
+          </View>
         )}
         {/* Heart */}
         <TouchableOpacity style={cS.heartBtn} onPress={() => onToggleFav(product.id)} activeOpacity={0.8}>
@@ -91,9 +108,23 @@ export default function MarketScreen({ userData, categoryFilter, onHome, onNetwo
   const [favorites, setFavorites] = useState(new Set());
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState('');
-  const [cartCount, setCartCount] = useState(0);
+  const [cartCount,  setCartCount]  = useState(0);
+  const [heroSlide,  setHeroSlide]  = useState(0);
+  const heroRef    = useRef(null);
+  const heroTimer  = useRef(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+    // Auto-slide hero carousel every 4 seconds
+    heroTimer.current = setInterval(() => {
+      setHeroSlide(prev => {
+        const next = (prev + 1) % HERO_SLIDES.length;
+        heroRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(heroTimer.current);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -199,26 +230,48 @@ export default function MarketScreen({ userData, categoryFilter, onHome, onNetwo
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
-        {/* ── HERO BANNER ── */}
-        <LinearGradient
-          colors={['#1B4332','#2d6a4f','#52b788']}
-          start={{ x:0, y:0 }} end={{ x:1, y:1 }}
-          style={styles.hero}
-        >
-          <View style={styles.heroLeft}>
-            <Text style={styles.heroTag}>🌿 EXCLUSIVE MARKET</Text>
-            <Text style={styles.heroTitle}>Support{'\n'}Local</Text>
-            <Text style={styles.heroSub}>Direct from Filipino Farmers</Text>
-            <TouchableOpacity style={styles.heroBtn} activeOpacity={0.85}>
-              <Text style={styles.heroBtnTxt}>Shop Now</Text>
-            </TouchableOpacity>
+        {/* ── HERO CAROUSEL ── */}
+        <View style={styles.heroWrap}>
+          <FlatList
+            ref={heroRef}
+            data={HERO_SLIDES}
+            horizontal
+            pagingEnabled
+            keyExtractor={(s) => s.id}
+            showsHorizontalScrollIndicator={false}
+            onScrollToIndexFailed={() => {}}
+            onMomentumScrollEnd={(e) =>
+              setHeroSlide(Math.round(e.nativeEvent.contentOffset.x / (width - 32)))
+            }
+            renderItem={({ item }) => (
+              <View style={styles.heroSlide}>
+                <View style={[styles.heroSlideInner, { backgroundColor: item.bg[0] }]}>
+                  <View style={styles.heroLeft}>
+                    <Text style={styles.heroTag}>{item.icon} {item.catId.toUpperCase()}</Text>
+                    <Text style={styles.heroTitle}>{item.title}</Text>
+                    <Text style={styles.heroSub}>{item.sub}</Text>
+                    <TouchableOpacity
+                      style={styles.heroBtn}
+                      activeOpacity={0.85}
+                      onPress={() => onProductPress?.({ _navigateCategory: item.catId })}
+                    >
+                      <Text style={styles.heroBtnTxt}>Shop Now</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.heroRight}>
+                    <Text style={{ fontSize: 64, lineHeight: 68 }}>{item.icon}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          />
+          {/* Dots indicator */}
+          <View style={styles.dotsRow}>
+            {HERO_SLIDES.map((_, i) => (
+              <View key={i} style={[styles.heroDot, i === heroSlide && styles.heroDotActive]} />
+            ))}
           </View>
-          <View style={styles.heroRight}>
-            <Text style={{ fontSize:72, lineHeight:76 }}>🥬</Text>
-            <Text style={{ fontSize:48, marginTop:-10, marginLeft:12 }}>🍅</Text>
-            <Text style={{ fontSize:36, marginTop:-8, marginLeft:-8 }}>🌽</Text>
-          </View>
-        </LinearGradient>
+        </View>
 
         {/* ── SEARCH + CREDITS ── */}
         <View style={styles.searchSection}>
@@ -317,7 +370,7 @@ const cS = StyleSheet.create({
   },
   imgWrap:       { width:'100%', height: CARD_W, position:'relative' },
   img:           { width:'100%', height:'100%' },
-  imgPlaceholder:{ width:'100%', height:'100%', alignItems:'center', justifyContent:'center' },
+  imgPlaceholder:{ width:'100%', height:'100%', alignItems:'center', justifyContent:'center', backgroundColor:'#F5F5F5' },
   heartBtn: {
     position:'absolute', top:8, right:8,
     width:30, height:30, borderRadius:15,
@@ -366,16 +419,17 @@ const styles = StyleSheet.create({
   },
   cartBadgeTxt: { fontSize:8, fontWeight:'900', color:'#1B5E20' },
 
-  /* Hero */
-  hero: {
-    marginHorizontal:16, marginTop:16,
-    borderRadius:20, padding:24,
-    flexDirection:'row', alignItems:'center',
-    minHeight:160, overflow:'hidden',
+  /* Hero carousel */
+  heroWrap: { paddingHorizontal: 16, marginTop: 16 },
+  heroSlide: { width: width - 32 },
+  heroSlideInner: {
+    borderRadius: 20, padding: 24,
+    flexDirection: 'row', alignItems: 'center',
+    minHeight: 160, overflow: 'hidden',
   },
   heroLeft:   { flex:1 },
   heroTag:    { fontSize:10, fontWeight:'700', color:'rgba(255,255,255,0.75)', letterSpacing:1.5, marginBottom:6 },
-  heroTitle:  { fontSize:30, fontWeight:'900', color:'#fff', lineHeight:34, marginBottom:6 },
+  heroTitle:  { fontSize:26, fontWeight:'900', color:'#fff', lineHeight:30, marginBottom:6 },
   heroSub:    { fontSize:12, color:'rgba(255,255,255,0.80)', marginBottom:16 },
   heroBtn:    {
     backgroundColor:'#FFC107', alignSelf:'flex-start',
@@ -385,6 +439,9 @@ const styles = StyleSheet.create({
   },
   heroBtnTxt: { fontSize:14, fontWeight:'800', color:'#1B5E20' },
   heroRight:  { alignItems:'center', justifyContent:'center', paddingLeft:8 },
+  dotsRow:    { flexDirection:'row', justifyContent:'center', marginTop:10, gap:5 },
+  heroDot:    { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D1D5DB' },
+  heroDotActive: { width: 18, backgroundColor: '#2E7D32' },
 
   /* Search */
   searchSection: { paddingHorizontal:16, marginTop:16, gap:10 },

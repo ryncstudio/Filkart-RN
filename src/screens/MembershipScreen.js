@@ -25,7 +25,7 @@ const CheckIcon = ({ gold }) => (
   </View>
 );
 
-export default function MembershipScreen({ onSelect, onLogout }) {
+export default function MembershipScreen({ onSelect }) {
   const [selected, setSelected] = useState(null);
 
   const [fontsLoaded] = useFonts({
@@ -64,14 +64,8 @@ export default function MembershipScreen({ onSelect, onLogout }) {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* ── Top Bar with Logout ── */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <View style={{ width: 60 }} />
-          <Text style={styles.label}>Filkart Subscriptions</Text>
-          <TouchableOpacity onPress={onLogout} style={{ padding: 8 }}>
-            <Text style={{ color: '#E53E3E', fontFamily: 'Inter_600SemiBold', fontSize: 13 }}>Logout</Text>
-          </TouchableOpacity>
-        </View>
+        {/* ── Top Label ── */}
+        <Text style={[styles.label, { textAlign: 'center', marginBottom: 16 }]}>Filkart Subscriptions</Text>
 
         {/* ── Header ── */}
         <View style={styles.header}>

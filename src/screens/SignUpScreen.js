@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { registerUser } from '../lib/supabase';
+import { registerUser, supabase } from '../lib/supabase';
 import {
   View,
   Text,
@@ -50,6 +50,10 @@ export default function SignUpScreen({ onNext, onBack }) {
       setError('Please fill in all fields.');
       return;
     }
+    if (!referralCode.trim()) {
+      setError('Referral code is required. Please enter a valid referral code from an existing member.');
+      return;
+    }
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -61,6 +65,19 @@ export default function SignUpScreen({ onNext, onBack }) {
     setError('');
     setLoading(true);
     try {
+      // Validate referral code exists in the database before registering
+      const { data: referrer } = await supabase
+        .from('users')
+        .select('id')
+        .eq('referral_code', referralCode.trim().toUpperCase())
+        .maybeSingle();
+
+      if (!referrer) {
+        setError('Invalid referral code. Please check the code and try again.');
+        setLoading(false);
+        return;
+      }
+
       // Register in Supabase Auth + public.users
       // plan details come from the next screen — pass placeholders for now
       const userId = await registerUser({
@@ -71,7 +88,7 @@ export default function SignUpScreen({ onNext, onBack }) {
         password,
         planId:      null,
         planAmount:  null,
-        referralCode: referralCode.trim() || null,
+        referralCode: referralCode.trim(),
       });
       onNext({ userId, fullName, username, mobile, email });
     } catch (err) {
@@ -189,7 +206,7 @@ export default function SignUpScreen({ onNext, onBack }) {
                 onPress={() => setShowPass((v) => !v)}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Text style={styles.eyeIcon}>{showPass ? '👁️' : '🙈'}</Text>
+                <Text style={styles.eyeIcon}>{showPass ? '◉' : '—'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -208,15 +225,16 @@ export default function SignUpScreen({ onNext, onBack }) {
                 onPress={() => setShowConfirm((v) => !v)}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Text style={styles.eyeIcon}>{showConfirm ? '👁️' : '🙈'}</Text>
+                <Text style={styles.eyeIcon}>{showConfirm ? '◉' : '—'}</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Referral Code (optional) */}
-            <View style={styles.inputWrap}>
+            {/* Referral Code (required) */}
+            <View style={[styles.inputWrap, styles.referralWrap]}>
+              <Text style={styles.requiredBadge}>REQUIRED</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Referral Code e.g. FK7X3M9P (optional)"
+                placeholder="Referral Code e.g. FK7X3M9P"
                 placeholderTextColor="#BBBBBB"
                 autoCapitalize="characters"
                 autoCorrect={false}
@@ -329,7 +347,7 @@ const styles = StyleSheet.create({
     right: 14,
     padding: 4,
   },
-  eyeIcon: { fontSize: 18 },
+  eyeIcon: { fontSize: 20, color: '#9CA3AF', fontWeight: '700' },
 
   /* Next Button */
   nextBtn: {
@@ -380,5 +398,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#C62828',
     lineHeight: 18,
+  },
+
+  /* Referral Code — required styling */
+  referralWrap: {
+    borderColor: '#2E7D32',
+    borderWidth: 2,
+    backgroundColor: '#F0FFF0',
+  },
+  requiredBadge: {
+    position: 'absolute',
+    top: -10,
+    right: 14,
+    backgroundColor: '#2E7D32',
+    color: '#FFFFFF',
+    fontFamily: 'Inter_700Bold',
+    fontSize: 9,
+    letterSpacing: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
 });

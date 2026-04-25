@@ -5,6 +5,7 @@ import {
   LayoutAnimation, UIManager,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 const STATUS_H = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 24) : 44;
@@ -219,7 +220,7 @@ export default function CategoriesScreen({ userData, onBack, onSelectCategory, o
         <View style={{ height: STATUS_H }} />
         <View style={styles.headerRow}>
           <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
-            <Text style={styles.backArrow}>←</Text>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Categories</Text>
           <TouchableOpacity style={styles.searchIconBtn} activeOpacity={0.7}>

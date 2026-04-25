@@ -172,7 +172,7 @@ export default function LoginScreen({ onLogin, onSignUp, successMessage = '', on
                 onPress={() => setShowPass((v) => !v)}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Text style={styles.eyeIcon}>{showPass ? '👁️' : '🙈'}</Text>
+                <Text style={styles.eyeIcon}>{showPass ? '◉' : '—'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -294,7 +294,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   eyeIcon: {
-    fontSize: 18,
+    fontSize: 20,
+    color: '#9CA3AF',
+    fontWeight: '700',
   },
 
   forgotWrap: {

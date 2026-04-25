@@ -5,6 +5,7 @@ import {
   Modal, Animated, PanResponder, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { addToCart } from '../lib/supabase';
 
 const { width, height } = Dimensions.get('window');
@@ -217,7 +218,7 @@ export default function ProductDetailScreen({ product, userData, onBack, onCartP
 
       {/* Floating back btn */}
       <TouchableOpacity style={[s.floatBack, { top: STATUS_H + 8 }]} onPress={onBack} activeOpacity={0.8}>
-        <Text style={{ fontSize:18, color:'#111', fontWeight:'700' }}>←</Text>
+        <Ionicons name="arrow-back" size={24} color="#111" />
       </TouchableOpacity>
       <TouchableOpacity style={[s.floatHeart, { top: STATUS_H + 8 }]} onPress={() => setIsFav(f => !f)} activeOpacity={0.8}>
         <Text style={{ fontSize:16, color: isFav ? '#EF4444' : '#9CA3AF' }}>{isFav ? '♥' : '♡'}</Text>

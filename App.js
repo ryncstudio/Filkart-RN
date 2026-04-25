@@ -369,7 +369,6 @@ export default function App() {
         {screen === 'membership' && (
           <MembershipScreen
             onSelect={(plan) => { setPlanData(plan); setScreen('payment'); }}
-            onLogout={handleLogout}
           />
         )}
 

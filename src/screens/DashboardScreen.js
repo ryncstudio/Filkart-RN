@@ -4,8 +4,19 @@ import {
   Dimensions, StatusBar, ActivityIndicator, FlatList,
   Image, Platform, Modal, TouchableWithoutFeedback,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getCurrentUserProfile, getWallet, getTransactions, supabase } from '../lib/supabase';
+
+// ── Line-art wallet icon (no color fill, just strokes) ─────────────────────────
+function WalletLineIcon({ size = 20, color = 'rgba(255,255,255,0.85)' }) {
+  return (
+    <View style={{ width: size, height: size * 0.8, borderWidth: 1.5, borderColor: color, borderRadius: 3, justifyContent: 'flex-start' }}>
+      <View style={{ height: size * 0.22, borderBottomWidth: 1.5, borderBottomColor: color, backgroundColor: 'transparent' }} />
+      <View style={{ position: 'absolute', right: 2, top: size * 0.3, width: size * 0.22, height: size * 0.22, borderRadius: size * 0.11, borderWidth: 1.5, borderColor: color }} />
+    </View>
+  );
+}
 
 const { width, height } = Dimensions.get('window');
 const CARD_W   = width - 32;
@@ -28,10 +39,10 @@ const SLIDES = [
 
 // ── Quick actions ──────────────────────────────────────────────────────────────
 const ACTIONS = [
-  { id: 'shop',     icon: '🏪', label: 'Shop Essentials', bg: '#F0FFF4' },
-  { id: 'share',    icon: '📤', label: 'Share & Earn',    bg: '#EFF6FF' },
-  { id: 'network',  icon: '👥', label: 'My Network',      bg: '#F5F3FF' },
-  { id: 'partners', icon: '🎁', label: 'Kart Partners',   bg: '#FFF7ED' },
+  { id: 'shop',     icon: '🏪', label: 'Shop Essentials', bg: '#D4EDDA', border: '#A3D9A5' },
+  { id: 'share',    icon: '📤', label: 'Share & Earn',    bg: '#D6E4F0', border: '#A8C8E8' },
+  { id: 'network',  icon: '👥', label: 'My Network',      bg: '#E2D9F3', border: '#C4B5DC' },
+  { id: 'partners', icon: '🎁', label: 'Kart Partners',   bg: '#FAE3C8', border: '#E8C8A0' },
 ];
 
 // ── Bottom tabs ────────────────────────────────────────────────────────────────
@@ -126,6 +137,7 @@ export default function DashboardScreen({ userData, onLogout, onNetwork, onShop,
   const [activeTab,     setActiveTab]     = useState('home');
   const [notifOpen,     setNotifOpen]     = useState(false);
   const [unreadCount,   setUnreadCount]   = useState(0);
+  const [profilePic,    setProfilePic]    = useState(null);
 
   const flatRef  = useRef(null);
   const timerRef = useRef(null);
@@ -133,6 +145,7 @@ export default function DashboardScreen({ userData, onLogout, onNetwork, onShop,
   // ── Initial data load ──────────────────────────────────────────────────────
   useEffect(() => {
     loadData();
+    AsyncStorage.getItem('filkart_profile_pic').then(uri => { if (uri) setProfilePic(uri); });
     return () => clearInterval(timerRef.current);
   }, []);
 
@@ -273,9 +286,11 @@ export default function DashboardScreen({ userData, onLogout, onNetwork, onShop,
             {/* Left: avatar + greeting */}
             <View style={styles.headerLeft}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {displayName[0]?.toUpperCase() ?? '?'}
-                </Text>
+                {profilePic ? (
+                  <Image source={{ uri: profilePic }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+                ) : (
+                  <Text style={styles.avatarText}>👤</Text>
+                )}
               </View>
               <View style={styles.headerText}>
                 <Text style={styles.headerLabel}>DASHBOARD</Text>
@@ -344,9 +359,9 @@ export default function DashboardScreen({ userData, onLogout, onNetwork, onShop,
         >
           <View style={styles.earningsTitleRow}>
             <Text style={styles.earningsLabel}>Total Earnings</Text>
-            <TouchableOpacity>
-              <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18 }}>⧉</Text>
-            </TouchableOpacity>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+              <WalletLineIcon size={18} />
+            </View>
           </View>
           <Text style={styles.earningsAmount}>{fmt(totalEarnings)}</Text>
           <View style={styles.earningsSubs}>
@@ -368,7 +383,7 @@ export default function DashboardScreen({ userData, onLogout, onNetwork, onShop,
             {ACTIONS.map((a) => (
               <TouchableOpacity
                 key={a.id}
-                style={[styles.quickCard, { backgroundColor: a.bg }]}
+                style={[styles.quickCard, { backgroundColor: a.bg, borderWidth: 1, borderColor: a.border }]}
                 onPress={() => {
                   if (a.id === 'network') onNetwork?.();
                   else if (a.id === 'shop') onMarket?.();
