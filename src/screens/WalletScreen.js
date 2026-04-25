@@ -169,7 +169,7 @@ function TxnRow({ txn }) {
 }
 
 // ── Main Screen ────────────────────────────────────────────────────────────────
-export default function WalletScreen({ userData, onBack, onHome, onNetwork, onMarket }) {
+export default function WalletScreen({ userData, onBack, onHome, onNetwork, onMarket, onProfile }) {
   const [wallet,     setWallet]     = useState(null);
   const [txns,       setTxns]       = useState([]);
   const [txnTab,     setTxnTab]     = useState('unilevel');
@@ -324,8 +324,9 @@ export default function WalletScreen({ userData, onBack, onHome, onNetwork, onMa
           return (
             <TouchableOpacity key={tab.id} style={s.tabItem} onPress={() => {
               if (tab.id === 'home')    onHome?.();
-              if (tab.id === 'market') onMarket?.();
+              if (tab.id === 'market')  onMarket?.();
               if (tab.id === 'network') onNetwork?.();
+              if (tab.id === 'profile') onProfile?.();
             }}>
               <Text style={[s.tabIcon, active && s.tabActive]}>{tab.icon}</Text>
               <Text style={[s.tabLabel, active && s.tabLabelActive]}>{tab.label}</Text>

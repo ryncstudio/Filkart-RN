@@ -116,7 +116,7 @@ function NotifRow({ item }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function DashboardScreen({ userData, onLogout, onNetwork, onShop, onMarket }) {
+export default function DashboardScreen({ userData, onLogout, onNetwork, onShop, onMarket, onWallet, onProfile }) {
   const [profile,       setProfile]       = useState(null);
   const [wallet,        setWallet]        = useState(null);
   const [transactions,  setTransactions]  = useState([]);

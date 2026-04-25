@@ -482,6 +482,7 @@ export default function App() {
             onHome={() => setScreen('dashboard')}
             onMarket={() => setScreen('market')}
             onNetwork={() => setScreen('network')}
+            onProfile={() => setScreen('profile')}
           />
         )}
 
