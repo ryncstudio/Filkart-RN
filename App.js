@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import * as SplashScreenAPI from 'expo-splash-screen';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, StatusBar } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
@@ -201,6 +201,12 @@ export default function App() {
   // ── Connectivity state (start true to avoid false-positive flash on launch) ──
   const [isConnected, setIsConnected] = useState(true);
 
+  // ── appReadyRef — keeps the auth listener from using a stale closure ──────
+  const appReadyRef = useRef(false);
+
+  // ── Success message shown on LoginScreen after OTP verification ───────────
+  const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
+
   useEffect(() => {
     // Subscribe to network state changes
     const unsubscribe = NetInfo.addEventListener(state => {
@@ -210,6 +216,9 @@ export default function App() {
     NetInfo.fetch().then(state => setIsConnected(state.isConnected ?? true));
     return () => unsubscribe();
   }, []);
+
+  // Keep appReadyRef in sync so the auth listener always has the latest value
+  useEffect(() => { appReadyRef.current = appReady; }, [appReady]);
 
   const handleRefresh = useCallback(() => {
     NetInfo.fetch().then(state => setIsConnected(state.isConnected ?? true));
@@ -251,19 +260,15 @@ export default function App() {
 
     bootstrap();
 
-    // ── Listen for auth state changes (login/logout) ──────────────────────
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && appReady && session?.user) {
-        setUserData({ userId: session.user.id });
-        // Developer fast-pass
-        if (session.user.email && DEV_EMAILS.includes(session.user.email)) {
-          setScreen('dashboard');
-          return;
-        }
-        const target = await resolveScreenForUser(session.user.id);
-        setScreen(target);
-      }
-      if (event === 'SIGNED_OUT' && appReady) {
+    // ── Listen for auth state changes ────────────────────────────────────────
+    // NOTE: We do NOT handle SIGNED_IN here — routing is done by handleLogin
+    // so we avoid double-routing. We only handle SIGNED_OUT (session expiry,
+    // signOut() call, or token revocation) using the ref to avoid stale closure.
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' && appReadyRef.current) {
+        setUserData(null);
+        setPlanData(null);
+        setOtpSuccessMsg('');
         setScreen('login');
       }
     });
@@ -292,15 +297,12 @@ export default function App() {
     }
   };
 
-  // Called on login — check if user already paid
+  // Called on login — single DB fetch for both routing + profile display
   const handleLogin = async (userId) => {
-    if (!userId) {
-      // Login failed — stay on login screen so the error is visible.
-      return;
-    }
+    if (!userId) return; // login failed — stay on login screen
 
-    // ── Developer fast-pass ───────────────────────────────────────────────
     try {
+      // ── Developer fast-pass ────────────────────────────────────────────
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email && DEV_EMAILS.includes(user.email)) {
         setUserData({ userId });
@@ -309,25 +311,33 @@ export default function App() {
       }
     } catch (_) {}
 
-    // ── Fetch full profile so PaymentScreen & OTPScreen have name/mobile ──
+    // ── Single fetch: profile data + status + role (no double-fetch) ─────
     try {
       const { data: profile } = await supabase
         .from('users')
-        .select('full_name, mobile_number, email')
+        .select('full_name, mobile_number, email, status, role')
         .eq('id', userId)
         .maybeSingle();
+
+      // Populate userData so PaymentScreen / OTPScreen show correct info
       setUserData({
         userId,
-        fullName: profile?.full_name  ?? '',
+        fullName: profile?.full_name    ?? '',
         mobile:   profile?.mobile_number ?? '',
-        email:    profile?.email ?? '',
+        email:    profile?.email         ?? '',
       });
-    } catch (_) {
-      setUserData({ userId });
-    }
 
-    const target = await resolveScreenForUser(userId);
-    setScreen(target);
+      // Route based on status
+      if (!profile)                        { setScreen('membership'); return; }
+      if (profile.role === 'developer')    { setScreen('dashboard');  return; }
+      if (profile.status === 'Active')     { setScreen('dashboard');  return; }
+      if (profile.status === 'PAID')       { setScreen('otp');        return; }
+      setScreen('membership'); // Pending or unknown
+    } catch (err) {
+      console.error('Login routing error:', err.message);
+      setUserData({ userId });
+      setScreen('membership');
+    }
   };
 
   if (screen === 'splash') return <ErrorBoundary><SplashScreen /></ErrorBoundary>;
@@ -344,6 +354,8 @@ export default function App() {
           <LoginScreen
             onLogin={handleLogin}
             onSignUp={() => setScreen('signup')}
+            successMessage={otpSuccessMsg}
+            onSuccessMessageSeen={() => setOtpSuccessMsg('')}
           />
         )}
 
@@ -373,7 +385,13 @@ export default function App() {
         {screen === 'otp' && (
           <OTPScreen
             userData={userData}
-            onSuccess={() => setScreen('dashboard')}
+            onSuccess={() => {
+              // After OTP: go to Login so the user authenticates properly
+              setOtpSuccessMsg(
+                'You have successfully registered! Please log in with your details to continue.'
+              );
+              setScreen('login');
+            }}
             onBack={() => setScreen('membership')}
           />
         )}

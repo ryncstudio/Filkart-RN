@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { signIn } from '../lib/supabase';
 import {
   View,
@@ -12,6 +12,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Animated,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -23,12 +24,31 @@ import {
 
 const { width, height } = Dimensions.get('window');
 
-export default function LoginScreen({ onLogin, onSignUp }) {
+export default function LoginScreen({ onLogin, onSignUp, successMessage = '', onSuccessMessageSeen }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword]     = useState('');
   const [showPass, setShowPass]     = useState(false);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
+  const bannerAnim                  = useRef(new Animated.Value(0)).current;
+  const timerRef                    = useRef(null);
+
+  // ── Animate-in banner and start 5s auto-dismiss ───────────────────────────
+  useEffect(() => {
+    if (!successMessage) {
+      Animated.timing(bannerAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start();
+      return;
+    }
+    // Slide + fade in
+    Animated.timing(bannerAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
+    // Auto-dismiss after 5 seconds
+    timerRef.current = setTimeout(() => {
+      Animated.timing(bannerAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+        onSuccessMessageSeen?.();
+      });
+    }, 5000);
+    return () => clearTimeout(timerRef.current);
+  }, [successMessage]);
 
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -45,6 +65,11 @@ export default function LoginScreen({ onLogin, onSignUp }) {
     }
     setError('');
     setLoading(true);
+    // Dismiss success banner as soon as user taps Log In
+    if (successMessage) {
+      clearTimeout(timerRef.current);
+      onSuccessMessageSeen?.();
+    }
     try {
       const { data } = await signIn(identifier, password);
       onLogin(data?.user?.id ?? null);
@@ -91,12 +116,33 @@ export default function LoginScreen({ onLogin, onSignUp }) {
               Log in to your ultimate local shopping experience
             </Text>
 
+            {/* ── OTP Success Banner ── */}
+            {!!successMessage && (
+              <Animated.View
+                style={[
+                  styles.successBox,
+                  {
+                    opacity: bannerAnim,
+                    transform: [{
+                      translateY: bannerAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-12, 0],
+                      }),
+                    }],
+                  },
+                ]}
+              >
+                <Text style={styles.successIcon}>✅</Text>
+                <Text style={styles.successText}>{successMessage}</Text>
+              </Animated.View>
+            )}
+
             {/* Error message */}
-            {error ? (
+            {!!error && (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>⚠️  {error}</Text>
               </View>
-            ) : null}
+            )}
 
             {/* Mobile / Email */}
             <View style={styles.inputWrap}>
@@ -295,6 +341,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_700Bold',
     fontSize: 14,
     color: '#2E7D32',
+  },
+  successBox: {
+    flexDirection:   'row',
+    alignItems:      'flex-start',
+    backgroundColor: '#E8F5E9',
+    borderWidth:     1,
+    borderColor:     '#A5D6A7',
+    borderRadius:    12,
+    padding:         14,
+    marginBottom:    16,
+    gap:             10,
+  },
+  successIcon: {
+    fontSize: 16,
+    marginTop: 1,
+  },
+  successText: {
+    flex:            1,
+    fontFamily:      'Inter_400Regular',
+    fontSize:        13,
+    color:           '#1B5E20',
+    lineHeight:      20,
   },
   errorBox: {
     backgroundColor: '#FFF3F3',
