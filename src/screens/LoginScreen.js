@@ -71,8 +71,8 @@ export default function LoginScreen({ onLogin, onSignUp, successMessage = '', on
       onSuccessMessageSeen?.();
     }
     try {
-      const { data } = await signIn(identifier, password);
-      onLogin(data?.user?.id ?? null);
+      const result = await signIn(identifier, password);
+      onLogin(result?.user?.id ?? null);
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
