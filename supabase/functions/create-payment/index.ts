@@ -70,8 +70,8 @@ Deno.serve(async (req: Request) => {
           }],
           payment_method_types: ['qrph', 'gcash', 'grab_pay', 'paymaya', 'card'],
           reference_number: userId.replace(/-/g, '').slice(0, 20),
-          success_url: 'https://hktiibwedhlcvcknmwmq.supabase.co/payment/success',
-          cancel_url:  'https://hktiibwedhlcvcknmwmq.supabase.co/payment/cancel',
+          success_url: 'filkart://payment/success',
+          cancel_url:  'filkart://payment/cancel',
           metadata: {
             user_id:   userId,
             plan_id:   planId,

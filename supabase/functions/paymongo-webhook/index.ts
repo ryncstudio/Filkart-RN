@@ -116,6 +116,17 @@ Deno.serve(async (req: Request) => {
 
     if (!userId) return json({ error: 'No user_id in metadata' }, 400);
 
+    // ── Idempotency: check current status BEFORE marking paid ──────────────
+    // PayMongo fires BOTH payment.paid AND checkout_session.payment.paid for
+    // checkout sessions. We only send OTP on the FIRST event (when status
+    // transitions from non-PAID → PAID). The second event is silently skipped.
+    const { data: currentUser } = await supabase
+      .from('users')
+      .select('status')
+      .eq('id', userId)
+      .maybeSingle();
+    const wasAlreadyPaid = currentUser?.status === 'PAID';
+
     // 1. Mark payment as paid (SECURITY DEFINER — bypasses RLS)
     await supabase.rpc('mark_payment_as_paid', {
       p_source_id:  sourceId,
@@ -125,11 +136,15 @@ Deno.serve(async (req: Request) => {
     // 2. Mark user as PAID (SECURITY DEFINER — bypasses RLS)
     await supabase.rpc('mark_user_as_paid', { p_user_id: userId });
 
-    // 3. Get mobile + send OTP (auto-spill now runs AFTER OTP verification)
-    const { data: mobile } = await supabase
-      .rpc('get_user_mobile', { p_user_id: userId });
+    // 3. Send OTP only ONCE (skip if this is a duplicate webhook event)
     let otpSent = false;
-    if (mobile) otpSent = await sendOTP(mobile as string);
+    if (!wasAlreadyPaid) {
+      const { data: mobile } = await supabase
+        .rpc('get_user_mobile', { p_user_id: userId });
+      if (mobile) otpSent = await sendOTP(mobile as string);
+    } else {
+      console.log(`Duplicate webhook for user ${userId} — OTP already sent, skipping.`);
+    }
 
     return json({ success: true, user_id: userId, otp_sent: otpSent });
   }

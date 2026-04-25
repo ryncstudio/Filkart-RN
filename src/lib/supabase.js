@@ -174,15 +174,16 @@ export async function createPayment({ userId, planId, amount, fullName = '', mob
  * Returns 'pending' | 'paid' | 'failed'
  */
 export async function checkPaymentStatus(userId) {
-  const { data, error } = await supabase
-    .from('payments')
+  // Check users.status (not payments.status) to avoid a race condition:
+  // the webhook calls mark_payment_as_paid THEN mark_user_as_paid.
+  // If we detect payments.status='paid' before users.status='PAID',
+  // resolveScreenForUser would still return 'membership' instead of 'otp'.
+  const { data } = await supabase
+    .from('users')
     .select('status')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .eq('id', userId)
     .single();
-  if (error) return 'pending';
-  return data?.status ?? 'pending';
+  return data?.status === 'PAID' ? 'paid' : 'pending';
 }
 
 /**

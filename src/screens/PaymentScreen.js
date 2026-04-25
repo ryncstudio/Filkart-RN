@@ -76,20 +76,20 @@ export default function PaymentScreen({ plan, userData, onSuccess, onBack }) {
     }
   };
 
-  // ── Open PayMongo checkout (QR Ph) ─────────────────────────────────────
+  // ── Open PayMongo checkout — auto-closes on filkart:// redirect ──────────
   const openCheckout = async () => {
     if (!paymentData?.checkoutUrl) {
       Alert.alert('Error', 'Payment URL not available. Please try again.');
       return;
     }
     setStep('polling');
-    await WebBrowser.openBrowserAsync(paymentData.checkoutUrl, {
-      toolbarColor:         '#1B4332',
-      controlsColor:        '#FBC02D',
-      showTitle:            true,
-      enableBarCollapsing:  false,
-    });
-    // Browser closed — start polling for payment confirmation
+    // openAuthSessionAsync auto-closes the browser when PayMongo redirects
+    // to filkart://payment/success — no more black error screen!
+    await WebBrowser.openAuthSessionAsync(
+      paymentData.checkoutUrl,
+      'filkart://',
+    );
+    // Browser closed (either paid ✅ or cancelled ❌) — start polling
     startPolling();
   };
 
