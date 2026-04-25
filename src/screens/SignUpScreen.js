@@ -216,12 +216,12 @@ export default function SignUpScreen({ onNext, onBack }) {
             <View style={styles.inputWrap}>
               <TextInput
                 style={styles.input}
-                placeholder="Referral Code (optional)"
+                placeholder="Referral Code e.g. FK7X3M9P (optional)"
                 placeholderTextColor="#BBBBBB"
-                autoCapitalize="none"
+                autoCapitalize="characters"
                 autoCorrect={false}
                 value={referralCode}
-                onChangeText={(t) => setReferralCode(t.trim())}
+                onChangeText={(t) => setReferralCode(t.trim().toUpperCase())}
               />
             </View>
 

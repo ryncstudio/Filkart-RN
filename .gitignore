@@ -52,6 +52,9 @@ check-dev.js
 skip_payment.js
 test-twilio.js
 gen-qr.js
+fix-stuck-account.js
+deploy-functions.js
+supabase/.temp/
 
 # Temp / log files
 *.log

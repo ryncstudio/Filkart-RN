@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar,
-  Platform, TextInput, Alert, ActivityIndicator, Linking, KeyboardAvoidingView,
+  Platform, TextInput, Alert, ActivityIndicator, Linking, KeyboardAvoidingView, Share,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getCurrentUserProfile, updateUserProfile } from '../lib/supabase';
 
@@ -46,9 +47,10 @@ export default function ProfileInfoScreen({ userData, onBack }) {
   const [payName,    setPayName]    = useState('');
   const [payNumber,  setPayNumber]  = useState('');
   const [payBank,    setPayBank]    = useState('');
-  const [referrer,   setReferrer]   = useState('');
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
+  const [referrer,      setReferrer]      = useState('');
+  const [referralCode,  setReferralCode]  = useState('');
+  const [loading,       setLoading]       = useState(true);
+  const [saving,        setSaving]        = useState(false);
 
   useEffect(() => {
     getCurrentUserProfile().then(prof => {
@@ -63,10 +65,18 @@ export default function ProfileInfoScreen({ userData, onBack }) {
       setPayNumber(prof.payout_account_number || '');
       setPayBank( prof.payout_bank_name      || '');
       setReferrer(prof.referrer_username || '');
+      setReferralCode(prof.referral_code || '');
     }).catch(()=>{}).finally(() => setLoading(false));
   }, []);
 
-  const referralLink = `filkart.com/ref/${username || (userData?.userId||'').slice(0,8)}`;
+  const handleCopyCode = async () => {
+    await Clipboard.setStringAsync(referralCode);
+    Alert.alert('Copied! 📋', `Referral code ${referralCode} copied to clipboard.`);
+  };
+
+  const handleShareCode = () => Share.share({
+    message: `Join me on Filkart! Use my referral code: ${referralCode} when you sign up.`,
+  });
 
   const handleSave = async () => {
     setSaving(true);
@@ -145,13 +155,15 @@ export default function ProfileInfoScreen({ userData, onBack }) {
           </TouchableOpacity>
           <Text style={s.privacyNote}>Your data is secure and encrypted. Filkart values your privacy.</Text>
 
-          {/* Referral Link */}
-          <Text style={s.sectionLabel}>YOUR REFERRAL LINK</Text>
+          {/* Referral Code */}
+          <Text style={s.sectionLabel}>YOUR REFERRAL CODE</Text>
           <View style={s.refCard}>
-            <Text style={s.refLink} numberOfLines={1}>{referralLink}</Text>
-            <TouchableOpacity style={s.copyBtn} activeOpacity={0.8}
-              onPress={() => Alert.alert('Link Ready 📋', `Your link:\n${referralLink}\n\nUse the Share button to send it!`)}>
-              <Text style={s.copyTxt}>📋 Copy</Text>
+            <Text style={s.refCode} numberOfLines={1}>{referralCode || '—'}</Text>
+            <TouchableOpacity style={s.codeCopyBtn} activeOpacity={0.8} onPress={handleCopyCode}>
+              <Text style={s.codeCopyTxt}>📋 Copy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.codeShareBtn} activeOpacity={0.8} onPress={handleShareCode}>
+              <Text style={s.codeShareTxt}>📤 Share</Text>
             </TouchableOpacity>
           </View>
 
@@ -214,9 +226,11 @@ const s = StyleSheet.create({
   saveTxt:{fontSize:15,fontWeight:'900',color:'#1B5E20'},
   privacyNote:{fontSize:11,color:'#9CA3AF',textAlign:'center',marginBottom:20,lineHeight:16},
   refCard:{flexDirection:'row',alignItems:'center',backgroundColor:'#fff',borderRadius:14,padding:14,borderWidth:1.5,borderColor:'#E5E7EB',marginBottom:20,gap:10},
-  refLink:{flex:1,fontSize:13,fontWeight:'700',color:'#374151'},
-  copyBtn:{backgroundColor:'#1B5E20',borderRadius:10,paddingHorizontal:12,paddingVertical:8},
-  copyTxt:{fontSize:12,fontWeight:'800',color:'#fff'},
+  refCode:{flex:1,fontSize:18,fontWeight:'900',color:'#1B5E20',letterSpacing:2},
+  codeCopyBtn:{backgroundColor:'#E8F5E9',borderRadius:10,paddingHorizontal:12,paddingVertical:8},
+  codeCopyTxt:{fontSize:12,fontWeight:'800',color:'#1B5E20'},
+  codeShareBtn:{backgroundColor:'#1B5E20',borderRadius:10,paddingHorizontal:12,paddingVertical:8},
+  codeShareTxt:{fontSize:12,fontWeight:'800',color:'#fff'},
   payLabel:{fontSize:10,fontWeight:'700',color:'#9CA3AF',letterSpacing:1,marginBottom:10},
   mopPill:{flex:1,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:4,paddingVertical:10,borderRadius:12,borderWidth:1.5,borderColor:'#E5E7EB'},
   mopPillOn:{backgroundColor:'#1B5E20',borderColor:'#1B5E20'},

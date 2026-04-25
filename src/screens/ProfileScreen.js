@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   StatusBar, Platform, Share, Alert, ActivityIndicator,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   getCurrentUserProfile, getWalletFull, getNetworkCountByLevel, signOut,
@@ -64,14 +65,21 @@ export default function ProfileScreen({ userData, onHome, onMarket, onWallet, on
   const progress   = rank.nextMin ? Math.min(100, Math.round(((network-rank.min)/(rank.nextMin-rank.min))*100)) : 100;
   const displayName = profile?.full_name || profile?.username || 'Filkart Member';
   const username   = profile?.username || '';
-  const referralLink = `filkart.com/ref/${username || (userData?.userId||'').slice(0,8)}`;
+  const referralCode = profile?.referral_code || '—';
   const joinedDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('en-PH',{month:'2-digit',year:'numeric'})
     : '—';
   const isVerified  = profile?.kyc_status === 'approved';
   const kycStatus   = profile?.kyc_status || 'pending';
 
-  const handleShare = () => Share.share({ message: `Join me on Filkart!\n\n${referralLink}` });
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(referralCode);
+    Alert.alert('Copied! 📋', `Referral code ${referralCode} copied to clipboard.`);
+  };
+
+  const handleShare = () => Share.share({
+    message: `Join me on Filkart! Use my referral code: ${referralCode} when you sign up.`,
+  });
 
   const handleLogout = () => Alert.alert('Log Out', 'Are you sure?', [
     { text:'Cancel', style:'cancel' },
@@ -123,9 +131,12 @@ export default function ProfileScreen({ userData, onHome, onMarket, onWallet, on
         {/* ── Referral Card ── */}
         <View style={s.referralCard}>
           <View style={{flex:1}}>
-            <Text style={s.refLabel}>YOUR REFERRAL LINK</Text>
-            <Text style={s.refLink} numberOfLines={1}>{referralLink}</Text>
+            <Text style={s.refLabel}>YOUR REFERRAL CODE</Text>
+            <Text style={s.refCode} numberOfLines={1}>{referralCode}</Text>
           </View>
+          <TouchableOpacity style={s.copyBtn} onPress={handleCopy} activeOpacity={0.85}>
+            <Text style={s.copyTxt}>📋 Copy</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={s.shareBtn} onPress={handleShare} activeOpacity={0.85}>
             <Text style={s.shareTxt}>📤 Share</Text>
           </TouchableOpacity>
@@ -232,9 +243,11 @@ const s = StyleSheet.create({
   heroName:{fontSize:26,fontWeight:'900',color:'#fff',marginTop:8,marginBottom:10},
   rankBadge:{flexDirection:'row',alignItems:'center',gap:6,borderWidth:1.5,borderRadius:24,paddingHorizontal:16,paddingVertical:7,backgroundColor:'rgba(0,0,0,0.25)'},
   rankTxt:{fontSize:13,fontWeight:'800',letterSpacing:0.5},
-  referralCard:{flexDirection:'row',alignItems:'center',backgroundColor:'#fff',marginHorizontal:16,marginTop:-1,borderRadius:16,padding:14,elevation:6,shadowColor:'#1B5E20',shadowOpacity:0.15,shadowRadius:10,gap:12},
+  referralCard:{flexDirection:'row',alignItems:'center',backgroundColor:'#fff',marginHorizontal:16,marginTop:-1,borderRadius:16,padding:14,elevation:6,shadowColor:'#1B5E20',shadowOpacity:0.15,shadowRadius:10,gap:10},
   refLabel:{fontSize:9,fontWeight:'700',color:'#9CA3AF',letterSpacing:1.2,marginBottom:3},
-  refLink:{fontSize:13,fontWeight:'700',color:'#1B5E20'},
+  refCode:{fontSize:18,fontWeight:'900',color:'#1B5E20',letterSpacing:2},
+  copyBtn:{backgroundColor:'#E8F5E9',borderRadius:12,paddingHorizontal:14,paddingVertical:10},
+  copyTxt:{fontSize:12,fontWeight:'800',color:'#1B5E20'},
   shareBtn:{backgroundColor:'#1B5E20',borderRadius:12,paddingHorizontal:14,paddingVertical:10},
   shareTxt:{fontSize:12,fontWeight:'800',color:'#fff'},
   statsCard:{flexDirection:'row',backgroundColor:'#fff',marginHorizontal:16,marginTop:12,borderRadius:16,paddingVertical:18,elevation:2,borderWidth:1,borderColor:'#F0F0F0'},
