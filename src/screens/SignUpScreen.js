@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { registerUser, supabase } from '../lib/supabase';
+import { registerUser } from '../lib/supabase';
 import {
   View,
   Text,
@@ -65,21 +65,9 @@ export default function SignUpScreen({ onNext, onBack }) {
     setError('');
     setLoading(true);
     try {
-      // Validate referral code exists in the database before registering
-      const { data: referrer } = await supabase
-        .from('users')
-        .select('id')
-        .eq('referral_code', referralCode.trim().toUpperCase())
-        .maybeSingle();
-
-      if (!referrer) {
-        setError('Invalid referral code. Please check the code and try again.');
-        setLoading(false);
-        return;
-      }
-
       // Register in Supabase Auth + public.users
-      // plan details come from the next screen — pass placeholders for now
+      // Referral code validation happens INSIDE registerUser after auth session
+      // is created (RLS blocks unauthenticated reads on the users table)
       const userId = await registerUser({
         fullName,
         username,

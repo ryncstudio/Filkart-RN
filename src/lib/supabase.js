@@ -28,6 +28,7 @@ function generateReferralCode() {
 /**
  * Register a new user in Supabase Auth + insert into users table.
  * Registration does NOT set status to PAID — that happens via PayMongo webhook.
+ */
 export async function registerUser({ fullName, username, mobile, email, password, planId, planAmount, referralCode }) {
   // 1. Create auth account
   const { data: authData, error: authErr } = await supabase.auth.signUp({
@@ -43,14 +44,26 @@ export async function registerUser({ fullName, username, mobile, email, password
   const myReferralCode = generateReferralCode();
 
   // 3. Resolve referrer's user_id if a referral code was provided
+  //    Uses RPC function with SECURITY DEFINER to bypass RLS
+  //    (RLS only lets users read their own row, but we need to look up
+  //     someone else's referral code during signup)
   let referredBy = null;
   if (referralCode) {
-    const { data: referrer } = await supabase
-      .from('users')
-      .select('id')
-      .eq('referral_code', referralCode.trim().toUpperCase())
-      .maybeSingle();
-    if (referrer?.id) referredBy = referrer.id;
+    const { data: referrerId, error: refErr } = await supabase
+      .rpc('validate_referral_code', { p_code: referralCode.trim() });
+
+    if (refErr) {
+      console.warn('Referral code lookup error:', refErr.message);
+    }
+
+    if (referrerId) {
+      referredBy = referrerId;
+    } else {
+      // Clean up: sign out the auth account we just created since referral is invalid
+      // (the user can re-try with a different code)
+      await supabase.auth.signOut();
+      throw new Error('Invalid referral code. Please check the code and try again.');
+    }
   }
 
   // 4. Insert into public.users
@@ -226,43 +239,55 @@ export async function getTransactions(userId) {
 
 /**
  * Get affiliates at a specific level of the Power of 10 network.
+ * Uses RPC function that computes levels from users.referred_by chain.
  */
 export async function getNetworkByLevel(userId, level) {
   const { data, error } = await supabase
-    .from('referrals')
-    .select('referred_id, position, users:referred_id(username, full_name)')
-    .eq('referrer_id', userId)
-    .eq('level', level)
-    .order('position', { ascending: true });
-  if (error) return [];
-  return data || [];
+    .rpc('get_network_by_level', { p_user_id: userId, p_level: level });
+  if (error) {
+    console.warn('getNetworkByLevel error:', error.message);
+    return [];
+  }
+  // Map to the shape NetworkScreen expects: { referred_id, position, users: { username, full_name } }
+  return (data || []).map(row => ({
+    referred_id: row.referred_id,
+    position: row.pos,
+    users: { username: row.username, full_name: row.full_name },
+  }));
 }
 
 /**
  * Get the user who referred this user (Topmost Account).
+ * Uses RPC function that looks up users.referred_by.
  */
 export async function getReferrer(userId) {
   const { data, error } = await supabase
-    .from('referrals')
-    .select('referrer_id, users:referrer_id(username, full_name)')
-    .eq('referred_id', userId)
-    .limit(1)
-    .maybeSingle();
-  if (error) return null;
-  return data;
+    .rpc('get_referrer', { p_user_id: userId });
+  if (error) {
+    console.warn('getReferrer error:', error.message);
+    return null;
+  }
+  if (!data || data.length === 0) return null;
+  const row = data[0];
+  // Map to the shape NetworkScreen expects: { referrer_id, users: { username, full_name } }
+  return {
+    referrer_id: row.referrer_id,
+    users: { username: row.username, full_name: row.full_name },
+  };
 }
 
 /**
  * Get total count of affiliates at a specific level (for capacity display on cards).
+ * Uses RPC function that counts from users.referred_by chain.
  */
 export async function getNetworkCountByLevel(userId, level) {
-  const { count, error } = await supabase
-    .from('referrals')
-    .select('*', { count: 'exact', head: true })
-    .eq('referrer_id', userId)
-    .eq('level', level);
-  if (error) return 0;
-  return count ?? 0;
+  const { data, error } = await supabase
+    .rpc('get_network_count_by_level', { p_user_id: userId, p_level: level });
+  if (error) {
+    console.warn('getNetworkCountByLevel error:', error.message);
+    return 0;
+  }
+  return data ?? 0;
 }
 
 /**
