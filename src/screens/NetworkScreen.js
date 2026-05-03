@@ -118,15 +118,15 @@ function MemberModal({ visible, levelCfg, members, loading, onClose }) {
                 : item.users?.full_name
                 ? item.users.full_name.split(' ')[0]
                 : `Member #${index + 1}`;
-              const initial = username.replace('@', '')[0]?.toUpperCase() ?? '?';
+              const legNum = item.position ?? index + 1;
               return (
                 <View style={mS.memberRow}>
                   <LinearGradient colors={colors} style={mS.memberAvatar}>
-                    <Text style={mS.memberInitial}>{initial}</Text>
+                    <Text style={mS.memberInitial}>{legNum}</Text>
                   </LinearGradient>
                   <View style={{ flex: 1 }}>
-                    <Text style={mS.memberName}>{username}</Text>
-                    <Text style={mS.memberPos}>Position #{item.position ?? index + 1}</Text>
+                    <Text style={mS.memberName}>Leg {legNum} · {username}</Text>
+                    <Text style={mS.memberPos}>{label} · Leg {legNum}</Text>
                   </View>
                   <View style={[mS.activeTag, { backgroundColor: levelCfg.light }]}>
                     <Text style={[mS.activeTagText, { color: accent }]}>ACTIVE</Text>
@@ -190,6 +190,13 @@ export default function NetworkScreen({ userData, onBack, onMarket, onWallet, on
       ? referrer.users.full_name.split(' ')[0]
       : null;
 
+  // Root account = no referrer (Filkart owner). Non-root = Level 1 members.
+  // Non-root users should NOT see Level 1 because their referrals first fill
+  // the overall Level 1 (Filkart root's direct legs) via the spill system.
+  // Their own downline starts at Level 2.
+  const isRootAccount = !referrerName;
+  const visibleLevels = isRootAccount ? LEVELS : LEVELS.filter(l => l.level !== 1);
+
   const totalMembers = Object.values(counts).reduce((s, c) => s + (c || 0), 0);
 
   return (
@@ -243,14 +250,17 @@ export default function NetworkScreen({ userData, onBack, onMarket, onWallet, on
         <View style={styles.spillBanner}>
           <Text style={styles.spillIcon}>ℹ️</Text>
           <Text style={styles.spillText}>
-            Your network grows as your referrals join. Each level holds <Text style={styles.spillBold}>10×</Text> the previous capacity. Tap any level to view members.
+            {isRootAccount
+              ? <>Your network grows as your referrals join. Each level holds <Text style={styles.spillBold}>10×</Text> the previous capacity. Tap any level to view members.</>
+              : <>Referrals you share are placed in the overall network first (Level 1 fills left to right). Your personal downline starts at <Text style={styles.spillBold}>Level 2</Text>. Tap any level to view members.</>
+            }
           </Text>
         </View>
 
-        {/* ── 5 Level cards ── */}
+        {/* ── Level cards (root sees all 5, non-root sees 2–5) ── */}
         <Text style={styles.sectionLabel}>UNILEVEL EXPLORER</Text>
 
-        {LEVELS.map((lvl) => {
+        {visibleLevels.map((lvl) => {
           const count    = counts[lvl.level] ?? 0;
           const progress = Math.min(count / lvl.capacity, 1);
           const pct      = (progress * 100).toFixed(1);
