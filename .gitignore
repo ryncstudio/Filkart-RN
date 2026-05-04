@@ -31,6 +31,8 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
 
 # typescript
@@ -42,6 +44,7 @@ yarn-error.*
 
 # !! SECRETS — never commit these !!
 supabase/deploy.js
+supabase/apply-migrations.js
 supabase/test-function.ps1
 expo-qr.html
 
@@ -54,6 +57,10 @@ test-twilio.js
 gen-qr.js
 fix-stuck-account.js
 deploy-functions.js
+fix-referral-credit.js
+fix-email.js
+check-unpaid.js
+check-products.js
 supabase/.temp/
 
 # Temp / log files
